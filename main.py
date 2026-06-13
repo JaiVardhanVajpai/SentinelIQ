@@ -8,6 +8,11 @@ from mitre_mapper import (
     get_mitre_for_url,
 )
 from vector_store import search_mitre
+from ai_explainer import (
+    explain_url_alert,
+    explain_ip_alert,
+    explain_login_alert,
+)
 import requests
 import os
 from dotenv import load_dotenv
@@ -27,12 +32,25 @@ if not VT_KEY or VT_KEY.strip() == "":
 if not ABUSE_KEY or ABUSE_KEY.strip() == "":
     raise RuntimeError("ABUSEIPDB_API_KEY is missing from .env")
 
+GROQ_KEY = os.getenv("GROQ_API_KEY")
+
+if not GROQ_KEY or GROQ_KEY.strip() == "":
+    raise RuntimeError("GROQ_API_KEY is missing from .env")
+
 
 # ─────────────────────────────────────────
 # REQUEST MODEL — Login Analysis
 # ─────────────────────────────────────────
 class LoginRequest(BaseModel):
     events: List[dict]
+
+
+# ─────────────────────────────────────────
+# REQUEST MODEL — Explain Alert (RAG)
+# ─────────────────────────────────────────
+class ExplainRequest(BaseModel):
+    alert_type: str
+    alert_data: dict
 
 
 # ─────────────────────────────────────────
@@ -48,7 +66,8 @@ def home():
             "/analyze-ip",
             "/analyze-login",
             "/analyze-mitre",
-            "/search-mitre"
+            "/search-mitre",
+            "/explain-alert"
         ]
     }
 
@@ -349,4 +368,49 @@ def search_mitre_endpoint(query: str):
         raise HTTPException(
             status_code=500,
             detail=f"MITRE search failed: {str(e)}"
+        )
+
+
+# ─────────────────────────────────────────
+# EXPLAIN ALERT — RAG (Retrieve + Gemini)
+# ─────────────────────────────────────────
+@app.post("/explain-alert")
+def explain_alert(request: ExplainRequest):
+
+    valid_types = ["url", "ip", "login"]
+
+    # Input validation
+    if request.alert_type not in valid_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid alert type. Must be 'url', 'ip', or 'login'"
+        )
+
+    if not request.alert_data:
+        raise HTTPException(
+            status_code=400,
+            detail="alert_data cannot be empty"
+        )
+
+    try:
+        # Route to the correct RAG explainer
+        if request.alert_type == "url":
+            explanation = explain_url_alert(request.alert_data)
+        elif request.alert_type == "ip":
+            explanation = explain_ip_alert(request.alert_data)
+        else:  # login
+            explanation = explain_login_alert(request.alert_data)
+
+        return {
+            "type": "alert_explanation",
+            "alert_type": request.alert_type,
+            "explanation": explanation
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Explanation failed: {str(e)}"
         )
