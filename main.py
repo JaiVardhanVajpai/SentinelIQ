@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from login_detector import analyze_login_events
 from mitre_mapper import (
     get_mitre_technique,
@@ -12,6 +12,11 @@ from ai_explainer import (
     explain_url_alert,
     explain_ip_alert,
     explain_login_alert,
+)
+from investigator import (
+    investigate_url,
+    investigate_ip,
+    investigate_login,
 )
 import requests
 import os
@@ -54,20 +59,30 @@ class ExplainRequest(BaseModel):
 
 
 # ─────────────────────────────────────────
+# REQUEST MODEL — Unified Investigation
+# ─────────────────────────────────────────
+class InvestigateRequest(BaseModel):
+    input_type: str
+    input_value: Optional[str] = None
+    events: Optional[List[dict]] = None
+
+
+# ─────────────────────────────────────────
 # HOME
 # ─────────────────────────────────────────
 @app.get("/")
 def home():
     return {
         "message": "SentinelIQ is running!",
-        "version": "3.0",
+        "version": "4.0",
         "endpoints": [
             "/analyze-url",
             "/analyze-ip",
             "/analyze-login",
             "/analyze-mitre",
             "/search-mitre",
-            "/explain-alert"
+            "/explain-alert",
+            "/investigate"
         ]
     }
 
@@ -413,4 +428,49 @@ def explain_alert(request: ExplainRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Explanation failed: {str(e)}"
+        )
+
+
+# ─────────────────────────────────────────
+# UNIFIED INVESTIGATION — end-to-end report
+# ─────────────────────────────────────────
+@app.post("/investigate")
+def investigate(request: InvestigateRequest):
+
+    valid_types = ["url", "ip", "login"]
+
+    # Input validation
+    if request.input_type not in valid_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid input_type. Must be 'url', 'ip', or 'login'"
+        )
+
+    if request.input_type in ["url", "ip"]:
+        if not request.input_value or request.input_value.strip() == "":
+            raise HTTPException(
+                status_code=400,
+                detail="input_value is required for url/ip investigations"
+            )
+    else:  # login
+        if not request.events:
+            raise HTTPException(
+                status_code=400,
+                detail="events are required for login investigations"
+            )
+
+    try:
+        if request.input_type == "url":
+            return investigate_url(request.input_value)
+        elif request.input_type == "ip":
+            return investigate_ip(request.input_value)
+        else:  # login
+            return investigate_login(request.events)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Investigation failed: {str(e)}"
         )
