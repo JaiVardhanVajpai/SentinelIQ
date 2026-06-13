@@ -7,6 +7,7 @@ from mitre_mapper import (
     get_mitre_for_ip,
     get_mitre_for_url,
 )
+from vector_store import search_mitre
 import requests
 import os
 from dotenv import load_dotenv
@@ -46,7 +47,8 @@ def home():
             "/analyze-url",
             "/analyze-ip",
             "/analyze-login",
-            "/analyze-mitre"
+            "/analyze-mitre",
+            "/search-mitre"
         ]
     }
 
@@ -312,4 +314,39 @@ def analyze_mitre(attack_type: str):
         raise HTTPException(
             status_code=500,
             detail=f"MITRE lookup failed: {str(e)}"
+        )
+
+
+# ─────────────────────────────────────────
+# MITRE SEMANTIC SEARCH (ChromaDB / TF-IDF)
+# ─────────────────────────────────────────
+@app.get("/search-mitre")
+def search_mitre_endpoint(query: str):
+
+    # Input validation
+    if not query or query.strip() == "":
+        raise HTTPException(
+            status_code=400,
+            detail="query cannot be empty"
+        )
+
+    try:
+        results = search_mitre(query)
+
+        return {
+            "type": "mitre_search",
+            "query": query,
+            "results_count": len(results),
+            "search_method": (
+                results[0]["search_method"] if results else "none"
+            ),
+            "results": results
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"MITRE search failed: {str(e)}"
         )
