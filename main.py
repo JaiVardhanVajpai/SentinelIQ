@@ -1,4 +1,7 @@
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
+from login_detector import analyze_login_events
 import requests
 import os
 from dotenv import load_dotenv
@@ -18,6 +21,14 @@ if not VT_KEY or VT_KEY.strip() == "":
 if not ABUSE_KEY or ABUSE_KEY.strip() == "":
     raise RuntimeError("ABUSEIPDB_API_KEY is missing from .env")
 
+
+# ─────────────────────────────────────────
+# REQUEST MODEL — Login Analysis
+# ─────────────────────────────────────────
+class LoginRequest(BaseModel):
+    events: List[dict]
+
+
 # ─────────────────────────────────────────
 # HOME
 # ─────────────────────────────────────────
@@ -25,12 +36,14 @@ if not ABUSE_KEY or ABUSE_KEY.strip() == "":
 def home():
     return {
         "message": "SentinelIQ is running!",
-        "version": "2.0",
+        "version": "3.0",
         "endpoints": [
             "/analyze-url",
-            "/analyze-ip"
+            "/analyze-ip",
+            "/analyze-login"
         ]
     }
+
 
 # ─────────────────────────────────────────
 # URL ANALYSIS — VirusTotal
@@ -38,7 +51,6 @@ def home():
 @app.get("/analyze-url")
 def analyze_url(url: str):
 
-    # Input validation
     if not url or url.strip() == "":
         raise HTTPException(
             status_code=400,
@@ -79,9 +91,7 @@ def analyze_url(url: str):
             timeout=10
         )
 
-        # Check the fetch response too (consistent with the submit step
-        # above) so a non-200 here fails clearly instead of throwing a
-        # confusing KeyError when stats are missing.
+        # Check fetch response status
         if result.status_code != 200:
             raise HTTPException(
                 status_code=502,
@@ -151,7 +161,6 @@ def analyze_url(url: str):
 @app.get("/analyze-ip")
 def analyze_ip(ip: str):
 
-    # Input validation
     if not ip or ip.strip() == "":
         raise HTTPException(
             status_code=400,
@@ -191,10 +200,8 @@ def analyze_ip(ip: str):
         usage_type = data.get("usageType", "unknown")
         isp = data.get("isp", "unknown")
 
-        # Risk score from abuse score
         risk_score = abuse_score
 
-        # Explainability breakdown
         explainability = {
             "abuseipdb": {
                 "contribution": round(abuse_score * 0.4),
@@ -203,7 +210,6 @@ def analyze_ip(ip: str):
             }
         }
 
-        # 3-tier verdict
         if abuse_score >= 80:
             verdict = "MALICIOUS"
         elif abuse_score >= 30:
@@ -231,4 +237,28 @@ def analyze_ip(ip: str):
         raise HTTPException(
             status_code=500,
             detail=f"IP analysis failed: {str(e)}"
+        )
+
+
+# ─────────────────────────────────────────
+# LOGIN ANALYSIS — Anomaly Detection
+# ─────────────────────────────────────────
+@app.post("/analyze-login")
+def analyze_login(request: LoginRequest):
+
+    if not request.events:
+        raise HTTPException(
+            status_code=400,
+            detail="No login events provided"
+        )
+
+    try:
+        return analyze_login_events(request.events)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Login analysis failed: {str(e)}"
         )
