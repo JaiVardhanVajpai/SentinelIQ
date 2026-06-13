@@ -2,6 +2,11 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
 from login_detector import analyze_login_events
+from mitre_mapper import (
+    get_mitre_technique,
+    get_mitre_for_ip,
+    get_mitre_for_url,
+)
 import requests
 import os
 from dotenv import load_dotenv
@@ -40,7 +45,8 @@ def home():
         "endpoints": [
             "/analyze-url",
             "/analyze-ip",
-            "/analyze-login"
+            "/analyze-login",
+            "/analyze-mitre"
         ]
     }
 
@@ -134,6 +140,9 @@ def analyze_url(url: str):
         else:
             verdict = "CLEAN"
 
+        # Step 8: MITRE ATT&CK mapping (flagged URLs map to Phishing)
+        mitre_mapping = get_mitre_for_url(malicious)
+
         return {
             "type": "url_analysis",
             "url": url,
@@ -143,7 +152,8 @@ def analyze_url(url: str):
             "total_engines": total_engines,
             "risk_score": risk_score,
             "verdict": verdict,
-            "explainability": explainability
+            "explainability": explainability,
+            "mitre_mapping": mitre_mapping
         }
 
     except HTTPException:
@@ -217,6 +227,9 @@ def analyze_ip(ip: str):
         else:
             verdict = "CLEAN"
 
+        # MITRE ATT&CK mapping (Tor/proxy ISP -> T1090, high abuse -> T1110)
+        mitre_mapping = get_mitre_for_ip(abuse_score, isp)
+
         return {
             "type": "ip_analysis",
             "ip": ip,
@@ -228,7 +241,8 @@ def analyze_ip(ip: str):
             "total_reports": total_reports,
             "risk_score": risk_score,
             "verdict": verdict,
-            "explainability": explainability
+            "explainability": explainability,
+            "mitre_mapping": mitre_mapping
         }
 
     except HTTPException:
@@ -261,4 +275,41 @@ def analyze_login(request: LoginRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Login analysis failed: {str(e)}"
+        )
+
+
+# ─────────────────────────────────────────
+# MITRE ATT&CK LOOKUP
+# ─────────────────────────────────────────
+@app.get("/analyze-mitre")
+def analyze_mitre(attack_type: str):
+
+    # Input validation
+    if not attack_type or attack_type.strip() == "":
+        raise HTTPException(
+            status_code=400,
+            detail="attack_type cannot be empty"
+        )
+
+    try:
+        technique = get_mitre_technique(attack_type)
+
+        if technique is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"MITRE technique not found for '{attack_type}'"
+            )
+
+        return {
+            "type": "mitre_lookup",
+            "query": attack_type,
+            "mitre_mapping": technique
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"MITRE lookup failed: {str(e)}"
         )
