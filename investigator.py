@@ -25,6 +25,9 @@ from ai_explainer import (
     explain_login_alert,
 )
 
+# Day 8: MongoDB persistence
+from database import get_db
+
 load_dotenv()
 
 VT_KEY = os.getenv("VIRUSTOTAL_API_KEY")
@@ -346,3 +349,26 @@ def investigate_login(events: list) -> dict:
         "ai_explanation": ai_explanation,
         "investigation_complete": True
     }
+
+
+# ─────────────────────────────────────────
+# Day 8: Persist an investigation to MongoDB
+# ─────────────────────────────────────────
+async def save_investigation(result: dict):
+    try:
+        db = get_db()
+        record = {
+            "investigation_id": result.get("investigation_id"),
+            "timestamp": result.get("timestamp"),
+            "input_type": result.get("input_type"),
+            "input_value": result.get("input_value"),
+            "verdict": result.get("verdict"),
+            "risk_score": result.get("risk_score"),
+            "severity": result.get("severity"),
+            "recommended_action": result.get("recommended_action"),
+            "full_report": result
+        }
+        await db.insert_one(record)
+        print(f"[SAVED] MongoDB: {result.get('investigation_id')}")
+    except Exception as e:
+        print(f"[ERROR] MongoDB save failed: {e}")

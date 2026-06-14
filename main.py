@@ -17,7 +17,9 @@ from investigator import (
     investigate_url,
     investigate_ip,
     investigate_login,
+    save_investigation,
 )
+from database import get_db
 import requests
 import os
 from dotenv import load_dotenv
@@ -435,7 +437,7 @@ def explain_alert(request: ExplainRequest):
 # UNIFIED INVESTIGATION — end-to-end report
 # ─────────────────────────────────────────
 @app.post("/investigate")
-def investigate(request: InvestigateRequest):
+async def investigate(request: InvestigateRequest):
 
     valid_types = ["url", "ip", "login"]
 
@@ -461,11 +463,14 @@ def investigate(request: InvestigateRequest):
 
     try:
         if request.input_type == "url":
-            return investigate_url(request.input_value)
+            result = investigate_url(request.input_value)
         elif request.input_type == "ip":
-            return investigate_ip(request.input_value)
+            result = investigate_ip(request.input_value)
         else:  # login
-            return investigate_login(request.events)
+            result = investigate_login(request.events)
+
+        await save_investigation(result)
+        return result
 
     except HTTPException:
         raise
@@ -474,3 +479,49 @@ def investigate(request: InvestigateRequest):
             status_code=500,
             detail=f"Investigation failed: {str(e)}"
         )
+
+
+# ─────────────────────────────────────────
+# Day 8: Investigation history (MongoDB)
+# ─────────────────────────────────────────
+@app.get("/investigations")
+async def get_all_investigations():
+    try:
+        db = get_db()
+        cursor = db.find({}, {"_id": 0}).sort("timestamp", -1).limit(20)
+        investigations = await cursor.to_list(length=20)
+        return {
+            "total": len(investigations),
+            "investigations": investigations
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/investigations/{investigation_id}")
+async def get_one_investigation(investigation_id: str):
+    try:
+        db = get_db()
+        result = await db.find_one(
+            {"investigation_id": investigation_id},
+            {"_id": 0}
+        )
+        if result:
+            return result
+        return {"error": "Investigation not found"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.delete("/investigations/{investigation_id}")
+async def delete_investigation(investigation_id: str):
+    try:
+        db = get_db()
+        result = await db.delete_one(
+            {"investigation_id": investigation_id}
+        )
+        if result.deleted_count == 1:
+            return {"message": f"Deleted {investigation_id}"}
+        return {"error": "Investigation not found"}
+    except Exception as e:
+        return {"error": str(e)}
