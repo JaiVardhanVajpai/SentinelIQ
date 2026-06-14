@@ -24,6 +24,8 @@ import requests
 import os
 from dotenv import load_dotenv
 import time
+from fastapi.responses import FileResponse
+from pdf_generator import generate_pdf
 
 load_dotenv()
 
@@ -525,3 +527,29 @@ async def delete_investigation(investigation_id: str):
         return {"error": "Investigation not found"}
     except Exception as e:
         return {"error": str(e)}
+
+
+# ─────────────────────────────────────────
+# Day 9: Download investigation report as PDF
+# ─────────────────────────────────────────
+@app.get("/investigations/{investigation_id}/report")
+async def download_report(investigation_id: str):
+    try:
+        db = get_db()
+        investigation = await db.find_one(
+            {"investigation_id": investigation_id},
+            {"_id": 0}
+        )
+        if not investigation:
+            return {"error": "Investigation not found"}
+
+        full_report = investigation.get("full_report", investigation)
+        filepath = generate_pdf(full_report)
+
+        return FileResponse(
+            path=filepath,
+            media_type="application/pdf",
+            filename=f"{investigation_id}.pdf"
+        )
+    except Exception as e:
+        return {"error": f"PDF generation failed: {str(e)}"}
