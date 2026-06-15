@@ -273,3 +273,53 @@ def get_mitre_for_url(malicious_count: int):
         return MITRE_TECHNIQUES["T1566"]
 
     return None
+
+
+# ─────────────────────────────────────────
+# Day 13: MITRE mitigation suggestions
+# Maps a technique ID to recommended mitigations (M-codes).
+# ─────────────────────────────────────────
+MITRE_MITIGATIONS = {
+    "T1566": [
+        {"id": "M1031", "name": "Network Intrusion Prevention",
+         "description": "Use intrusion detection signatures to block phishing traffic"},
+        {"id": "M1021", "name": "Restrict Web-Based Content",
+         "description": "Block access to known malicious domains and URLs"}
+    ],
+    "T1110": [
+        {"id": "M1036", "name": "Account Use Policies",
+         "description": "Set account lockout after failed login attempts"},
+        {"id": "M1032", "name": "Multi-factor Authentication",
+         "description": "Use MFA to mitigate credential compromise"}
+    ],
+    "T1078": [
+        {"id": "M1032", "name": "Multi-factor Authentication",
+         "description": "Require MFA especially for remote access"},
+        {"id": "M1026", "name": "Privileged Account Management",
+         "description": "Audit privileged accounts for suspicious activity"}
+    ],
+    "T1110.004": [
+        {"id": "M1036", "name": "Account Use Policies",
+         "description": "Implement rate limiting and account lockout policies"},
+        {"id": "M1032", "name": "Multi-factor Authentication",
+         "description": "MFA prevents credential stuffing even if passwords are compromised"}
+    ],
+    "T1090": [
+        {"id": "M1037", "name": "Filter Network Traffic",
+         "description": "Block known Tor exit nodes and anonymous proxy IPs"},
+        {"id": "M1031", "name": "Network Intrusion Prevention",
+         "description": "Use IDS/IPS to detect and block proxy-based traffic"}
+    ],
+    "T1071": [
+        {"id": "M1031", "name": "Network Intrusion Prevention",
+         "description": "Monitor and filter command and control traffic patterns"},
+        {"id": "M1037", "name": "Filter Network Traffic",
+         "description": "Block suspicious outbound connections to unknown IPs"}
+    ]
+}
+
+
+def get_mitigations(technique_id: str) -> list:
+    base_id = technique_id.split(".")[0] if "." in technique_id else technique_id
+    return MITRE_MITIGATIONS.get(technique_id,
+           MITRE_MITIGATIONS.get(base_id, []))

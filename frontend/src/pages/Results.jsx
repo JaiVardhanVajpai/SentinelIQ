@@ -38,6 +38,63 @@ function Card({ title, children }) {
   );
 }
 
+const MITIGATION_DETAILS = {
+  "M1031": {
+    how_to: [
+      "Deploy IDS/IPS solutions at network perimeter",
+      "Configure signatures for known attack patterns",
+      "Enable deep packet inspection on suspicious traffic"
+    ],
+    tools: ["Snort", "Suricata", "Palo Alto IPS", "Cisco Firepower"],
+    difficulty: "Medium"
+  },
+  "M1021": {
+    how_to: [
+      "Deploy web proxy with URL filtering enabled",
+      "Block access to newly registered domains",
+      "Implement DNS filtering for known malicious domains"
+    ],
+    tools: ["Zscaler", "Cisco Umbrella", "Bluecoat", "Squid Proxy"],
+    difficulty: "Easy"
+  },
+  "M1036": {
+    how_to: [
+      "Set account lockout after 5 failed attempts",
+      "Implement progressive delay between login attempts",
+      "Alert on multiple failed logins from same IP"
+    ],
+    tools: ["Active Directory GPO", "Azure AD", "Okta", "CrowdStrike"],
+    difficulty: "Easy"
+  },
+  "M1032": {
+    how_to: [
+      "Enforce MFA for all remote access and VPN",
+      "Use authenticator apps over SMS where possible",
+      "Implement MFA for privileged account access"
+    ],
+    tools: ["Duo Security", "Microsoft Authenticator", "Google Auth", "Okta MFA"],
+    difficulty: "Easy"
+  },
+  "M1037": {
+    how_to: [
+      "Block known Tor exit node IP ranges at firewall",
+      "Subscribe to threat intel feeds for Tor IPs",
+      "Monitor and alert on traffic to anonymous proxies"
+    ],
+    tools: ["Palo Alto NGFW", "Fortinet", "pfSense", "Emerging Threats Feed"],
+    difficulty: "Medium"
+  },
+  "M1026": {
+    how_to: [
+      "Audit privileged accounts quarterly",
+      "Implement just-in-time privileged access",
+      "Remove unnecessary admin rights from accounts"
+    ],
+    tools: ["CyberArk PAM", "BeyondTrust", "Microsoft PIM", "HashiCorp Vault"],
+    difficulty: "Hard"
+  }
+};
+
 function Results() {
   const [data, setData] = useState(null);
   const [decision, setDecision] = useState(null);
@@ -45,6 +102,7 @@ function Results() {
   const [submitting, setSubmitting] = useState(false);
   const [decisionError, setDecisionError] = useState("");
   const [decisionSuccess, setDecisionSuccess] = useState("");
+  const [expandedMitigation, setExpandedMitigation] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -407,6 +465,218 @@ function Results() {
                 <p className="text-sm text-white font-medium">{m.name}</p>
                 {m.tactic && (
                   <p className="text-xs text-gray-500 mt-1">{m.tactic}</p>
+                )}
+                {m.mitigations && m.mitigations.length > 0 && (
+                  <div style={{
+                    marginTop: '10px',
+                    paddingTop: '10px',
+                    borderTop: '1px solid rgba(255,255,255,0.08)'
+                  }}>
+                    <p style={{
+                      fontSize: '10px',
+                      color: '#64748b',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: '6px'
+                    }}>
+                      Recommended Mitigations
+                    </p>
+                    {m.mitigations.map((mit, mi) => {
+                      const details = MITIGATION_DETAILS[mit.id];
+                      const isExpanded = expandedMitigation === `${m.technique_id}-${mit.id}`;
+                      return (
+                        <div key={mi} style={{ marginBottom: '6px' }}>
+                          <div
+                            onClick={() => setExpandedMitigation(
+                              isExpanded ? null : `${m.technique_id}-${mit.id}`
+                            )}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '6px',
+                              cursor: 'pointer',
+                              padding: '6px',
+                              borderRadius: '6px',
+                              background: isExpanded
+                                ? 'rgba(59,130,246,0.08)'
+                                : 'transparent',
+                              border: isExpanded
+                                ? '1px solid rgba(59,130,246,0.2)'
+                                : '1px solid transparent',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <span style={{
+                              fontSize: '10px',
+                              fontWeight: '600',
+                              color: '#3b82f6',
+                              backgroundColor: 'rgba(59,130,246,0.1)',
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              flexShrink: 0,
+                              marginTop: '1px'
+                            }}>
+                              {mit.id}
+                            </span>
+                            <div style={{ flex: 1 }}>
+                              <span style={{
+                                fontSize: '11px',
+                                color: '#94a3b8',
+                                fontWeight: '500'
+                              }}>
+                                {mit.name}
+                              </span>
+                              <p style={{
+                                fontSize: '10px',
+                                color: '#64748b',
+                                margin: '1px 0 0 0'
+                              }}>
+                                {mit.description}
+                              </p>
+                            </div>
+                            <span style={{
+                              fontSize: '10px',
+                              color: '#475569',
+                              flexShrink: 0,
+                              marginTop: '2px'
+                            }}>
+                              {isExpanded ? '▲' : '▼'}
+                            </span>
+                          </div>
+
+                          {isExpanded && details && (
+                            <div style={{
+                              margin: '4px 0 0 0',
+                              padding: '10px 12px',
+                              background: 'rgba(15, 23, 42, 0.6)',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(59,130,246,0.15)'
+                            }}>
+                              <div style={{ marginBottom: '10px' }}>
+                                <p style={{
+                                  fontSize: '10px',
+                                  color: '#3b82f6',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em',
+                                  marginBottom: '6px',
+                                  fontWeight: '600'
+                                }}>
+                                  How to Implement
+                                </p>
+                                {details.how_to.map((step, si) => (
+                                  <div key={si} style={{
+                                    display: 'flex',
+                                    gap: '6px',
+                                    marginBottom: '4px',
+                                    alignItems: 'flex-start'
+                                  }}>
+                                    <span style={{
+                                      fontSize: '10px',
+                                      color: '#3b82f6',
+                                      flexShrink: 0,
+                                      marginTop: '1px'
+                                    }}>
+                                      {si + 1}.
+                                    </span>
+                                    <span style={{
+                                      fontSize: '11px',
+                                      color: '#94a3b8'
+                                    }}>
+                                      {step}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div style={{ marginBottom: '10px' }}>
+                                <p style={{
+                                  fontSize: '10px',
+                                  color: '#3b82f6',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em',
+                                  marginBottom: '6px',
+                                  fontWeight: '600'
+                                }}>
+                                  Common Tools
+                                </p>
+                                <div style={{
+                                  display: 'flex',
+                                  flexWrap: 'wrap',
+                                  gap: '4px'
+                                }}>
+                                  {details.tools.map((tool, ti) => (
+                                    <span key={ti} style={{
+                                      fontSize: '10px',
+                                      color: '#64748b',
+                                      background: 'rgba(100,116,139,0.1)',
+                                      border: '1px solid rgba(100,116,139,0.2)',
+                                      padding: '2px 6px',
+                                      borderRadius: '4px'
+                                    }}>
+                                      {tool}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                              }}>
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px'
+                                }}>
+                                  <span style={{
+                                    fontSize: '10px',
+                                    color: '#64748b',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em'
+                                  }}>
+                                    Difficulty:
+                                  </span>
+                                  <span style={{
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    color: details.difficulty === 'Easy'
+                                      ? '#10b981'
+                                      : details.difficulty === 'Medium'
+                                      ? '#f59e0b'
+                                      : '#ef4444',
+                                    background: details.difficulty === 'Easy'
+                                      ? 'rgba(16,185,129,0.1)'
+                                      : details.difficulty === 'Medium'
+                                      ? 'rgba(245,158,11,0.1)'
+                                      : 'rgba(239,68,68,0.1)',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px'
+                                  }}>
+                                    {details.difficulty}
+                                  </span>
+                                </div>
+
+                                <a
+                                  href={`https://attack.mitre.org/mitigations/${mit.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    fontSize: '10px',
+                                    color: '#3b82f6',
+                                    textDecoration: 'none'
+                                  }}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  MITRE Reference →
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             ))}

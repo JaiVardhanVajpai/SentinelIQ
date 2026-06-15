@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 # Read-only reuse of existing engines
 from login_detector import analyze_login_events
-from mitre_mapper import get_mitre_for_url, get_mitre_for_ip
+from mitre_mapper import get_mitre_for_url, get_mitre_for_ip, get_mitigations
 from vector_store import search_mitre
 from ai_explainer import (
     explain_url_alert,
@@ -131,6 +131,17 @@ def investigate_url(url: str) -> dict:
 
     # MITRE retrieval (semantic) + AI explanation (RAG)
     mitre_mapping = search_mitre(f"malicious url phishing {verdict}")
+
+    # Day 13: attach recommended mitigations to each technique
+    mitre_with_mitigations = []
+    for technique in (mitre_mapping or []):
+        technique_copy = dict(technique)
+        technique_copy["mitigations"] = get_mitigations(
+            technique.get("technique_id", "")
+        )
+        mitre_with_mitigations.append(technique_copy)
+    mitre_mapping = mitre_with_mitigations
+
     ai_explanation = explain_url_alert(threat_intel)
 
     # Confidence score
@@ -297,6 +308,17 @@ def investigate_ip(ip: str) -> dict:
     mitre_mapping = search_mitre(
         f"malicious ip {isp} {verdict} brute force proxy"
     )
+
+    # Day 13: attach recommended mitigations to each technique
+    mitre_with_mitigations = []
+    for technique in (mitre_mapping or []):
+        technique_copy = dict(technique)
+        technique_copy["mitigations"] = get_mitigations(
+            technique.get("technique_id", "")
+        )
+        mitre_with_mitigations.append(technique_copy)
+    mitre_mapping = mitre_with_mitigations
+
     ai_explanation = explain_ip_alert(threat_intel)
 
     # Confidence score
@@ -448,6 +470,17 @@ def investigate_login(events: list) -> dict:
         query = "suspicious login authentication anomaly"
 
     mitre_mapping = search_mitre(query)
+
+    # Day 13: attach recommended mitigations to each technique
+    mitre_with_mitigations = []
+    for technique in (mitre_mapping or []):
+        technique_copy = dict(technique)
+        technique_copy["mitigations"] = get_mitigations(
+            technique.get("technique_id", "")
+        )
+        mitre_with_mitigations.append(technique_copy)
+    mitre_mapping = mitre_with_mitigations
+
     ai_explanation = explain_login_alert(detection)
 
     explainability = {
