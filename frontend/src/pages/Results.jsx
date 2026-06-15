@@ -142,6 +142,79 @@ function Results() {
     );
   };
 
+  const formatKey = (key) => {
+    const labels = {
+      'type': 'Type',
+      'ip': 'IP Address',
+      'url': 'URL',
+      'abuse_score': 'Abuse Score',
+      'country': 'Country',
+      'isp': 'ISP',
+      'domain': 'Domain',
+      'usage_type': 'Usage Type',
+      'total_reports': 'Total Reports',
+      'verdict': 'Verdict',
+      'malicious_engines': 'Malicious Engines',
+      'harmless_engines': 'Harmless Engines',
+      'suspicious_engines': 'Suspicious Engines',
+      'total_engines': 'Total Engines',
+      'risk_score': 'Risk Score',
+      'explainability': 'Explainability'
+    };
+    return labels[key] ||
+      key.replace(/_/g, ' ')
+         .replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const getCountryName = (code) => {
+    const countries = {
+      'DE': 'Germany',
+      'US': 'United States',
+      'CN': 'China',
+      'RU': 'Russia',
+      'IN': 'India',
+      'GB': 'United Kingdom',
+      'FR': 'France',
+      'NL': 'Netherlands',
+      'UA': 'Ukraine',
+      'BR': 'Brazil',
+      'KR': 'South Korea',
+      'JP': 'Japan',
+      'CA': 'Canada',
+      'AU': 'Australia',
+      'SG': 'Singapore',
+      'HK': 'Hong Kong',
+      'TR': 'Turkey',
+      'IR': 'Iran',
+      'KP': 'North Korea',
+      'PK': 'Pakistan'
+    };
+    return countries[code]
+      ? `${code} — ${countries[code]}`
+      : code;
+  };
+
+  const formatValue = (key, value) => {
+    if (key === 'country') {
+      return getCountryName(String(value));
+    }
+    if (key === 'type') {
+      const typeMap = {
+        'ip_analysis': 'IP Analysis',
+        'url_analysis': 'URL Analysis',
+        'login_analysis': 'Login Analysis'
+      };
+      return typeMap[String(value)] ||
+        String(value)
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+    }
+    if (key === 'abuse_score') {
+      return `${value} / 100`;
+    }
+    return String(value);
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       {/* Verdict banner */}
@@ -373,15 +446,34 @@ function Results() {
           <div className="grid sm:grid-cols-2 gap-y-2 gap-x-8 text-sm">
             {Object.entries(intel)
               .filter(
-                ([, v]) => v != null && typeof v !== 'object'
+                ([k, v]) =>
+                  v != null &&
+                  typeof v !== 'object' &&
+                  k !== 'explainability'
               )
               .map(([k, v]) => (
                 <div key={k} className="flex justify-between border-b border-gray-800/60 py-1.5">
-                  <span className="text-gray-400 capitalize">
-                    {k.replace(/_/g, ' ')}
+                  <span className="text-gray-400">
+                    {formatKey(k)}
                   </span>
                   <span className="font-mono text-gray-200 text-right ml-4 break-all">
-                    {String(v)}
+                    {k === 'verdict' ? (
+                      <span
+                        style={{
+                          color: String(v) === 'MALICIOUS'
+                            ? '#ef4444'
+                            : String(v) === 'CLEAN'
+                            ? '#10b981'
+                            : String(v) === 'SUSPICIOUS'
+                            ? '#f59e0b'
+                            : 'inherit'
+                        }}
+                      >
+                        {formatValue(k, v)}
+                      </span>
+                    ) : (
+                      formatValue(k, v)
+                    )}
                   </span>
                 </div>
               ))}
