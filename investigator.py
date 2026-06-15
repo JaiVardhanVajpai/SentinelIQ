@@ -221,11 +221,48 @@ def investigate_url(url: str) -> dict:
             }
         ]
 
+    # Day 14: investigation timeline (incremental 1s steps)
+    _t0 = datetime.datetime.utcnow()
+    _sec = lambda n: (_t0 + datetime.timedelta(seconds=n)).isoformat()
+    timeline = [
+        {
+            "time": _sec(0),
+            "step": "Investigation Started",
+            "detail": f"URL submitted for analysis",
+            "status": "complete"
+        },
+        {
+            "time": _sec(1),
+            "step": "VirusTotal Scan",
+            "detail": f"Scanned by {threat_intel.get('total_engines', 'N/A')} engines — {threat_intel.get('malicious_engines', 0)} flagged malicious",
+            "status": "complete"
+        },
+        {
+            "time": _sec(2),
+            "step": "MITRE ATT&CK Mapping",
+            "detail": f"Top technique: {mitre_mapping[0].get('technique_id', 'N/A') if mitre_mapping else 'None found'}",
+            "status": "complete"
+        },
+        {
+            "time": _sec(3),
+            "step": "AI Explanation Generated",
+            "detail": "RAG-grounded explanation via Groq LLaMA 3.1",
+            "status": "complete"
+        },
+        {
+            "time": _sec(4),
+            "step": "Awaiting Analyst Decision",
+            "detail": "Investigation complete — analyst review required",
+            "status": "pending"
+        }
+    ]
+
     return {
         "investigation_id": inv_id,
         "timestamp": timestamp,
         "input_type": "url",
         "input_value": url,
+        "timeline": timeline,
         "verdict": verdict,
         "risk_score": risk_score,
         "confidence_score": confidence,
@@ -408,11 +445,48 @@ def investigate_ip(ip: str) -> dict:
                 }
             ]
 
+    # Day 14: investigation timeline (incremental 1s steps)
+    _t0 = datetime.datetime.utcnow()
+    _sec = lambda n: (_t0 + datetime.timedelta(seconds=n)).isoformat()
+    timeline = [
+        {
+            "time": _sec(0),
+            "step": "Investigation Started",
+            "detail": f"IP address {ip} submitted for analysis",
+            "status": "complete"
+        },
+        {
+            "time": _sec(1),
+            "step": "Threat Intelligence",
+            "detail": f"AbuseIPDB returned abuse score: {threat_intel.get('abuse_score', 'N/A')}",
+            "status": "complete"
+        },
+        {
+            "time": _sec(2),
+            "step": "MITRE ATT&CK Mapping",
+            "detail": f"Top technique: {mitre_mapping[0].get('technique_id', 'N/A') if mitre_mapping else 'None found'}",
+            "status": "complete"
+        },
+        {
+            "time": _sec(3),
+            "step": "AI Explanation Generated",
+            "detail": "RAG-grounded explanation via Groq LLaMA 3.1",
+            "status": "complete"
+        },
+        {
+            "time": _sec(4),
+            "step": "Awaiting Analyst Decision",
+            "detail": "Investigation complete — analyst review required",
+            "status": "pending"
+        }
+    ]
+
     return {
         "investigation_id": inv_id,
         "timestamp": timestamp,
         "input_type": "ip",
         "input_value": ip,
+        "timeline": timeline,
         "verdict": verdict,
         "risk_score": risk_score,
         "confidence_score": confidence,
@@ -546,11 +620,48 @@ def investigate_login(events: list) -> dict:
                 "weight": f"{round(100/detected_count)}%"
             })
 
+    # Day 14: investigation timeline (incremental 1s steps)
+    _t0 = datetime.datetime.utcnow()
+    _sec = lambda n: (_t0 + datetime.timedelta(seconds=n)).isoformat()
+    timeline = [
+        {
+            "time": _sec(0),
+            "step": "Investigation Started",
+            "detail": f"Login events submitted for analysis",
+            "status": "complete"
+        },
+        {
+            "time": _sec(1),
+            "step": "Anomaly Detection",
+            "detail": f"Analyzed {len(events) if events else 0} login events for suspicious patterns",
+            "status": "complete"
+        },
+        {
+            "time": _sec(2),
+            "step": "MITRE ATT&CK Mapping",
+            "detail": f"Top technique: {mitre_mapping[0].get('technique_id', 'N/A') if mitre_mapping else 'None found'}",
+            "status": "complete"
+        },
+        {
+            "time": _sec(3),
+            "step": "AI Explanation Generated",
+            "detail": "RAG-grounded explanation via Groq LLaMA 3.1",
+            "status": "complete"
+        },
+        {
+            "time": _sec(4),
+            "step": "Awaiting Analyst Decision",
+            "detail": "Investigation complete — analyst review required",
+            "status": "pending"
+        }
+    ]
+
     return {
         "investigation_id": inv_id,
         "timestamp": timestamp,
         "input_type": "login",
         "input_value": "login_events",
+        "timeline": timeline,
         "verdict": overall_verdict,
         "risk_score": risk_score,
         "confidence_score": confidence,

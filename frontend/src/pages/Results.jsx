@@ -751,6 +751,75 @@ function Results() {
         </Card>
       </div>
 
+      {/* Investigation Timeline */}
+      {data.timeline && data.timeline.length > 0 && (
+        <div className="mt-6 mb-6 p-6 rounded-xl border border-gray-700"
+          style={{background: '#0d1526'}}>
+          <h3 className="text-xs font-medium text-gray-400
+            tracking-widest uppercase mb-4">
+            Investigation Timeline
+          </h3>
+          <div className="relative">
+            <div className="absolute left-3 top-0 bottom-0
+              w-px bg-gray-700" />
+            {data.timeline.map((step, index) => (
+              <div key={index}
+                className="relative flex gap-4 mb-4 last:mb-0">
+                <div className="relative z-10 flex-shrink-0">
+                  <div className="w-6 h-6 rounded-full flex
+                    items-center justify-center"
+                    style={{
+                      background: step.status === 'complete'
+                        ? 'rgba(16,185,129,0.2)'
+                        : 'rgba(245,158,11,0.2)',
+                      border: `1px solid ${
+                        step.status === 'complete'
+                          ? '#10b981' : '#f59e0b'
+                      }`
+                    }}>
+                    <div className="w-2 h-2 rounded-full"
+                      style={{
+                        background: step.status === 'complete'
+                          ? '#10b981' : '#f59e0b'
+                      }} />
+                  </div>
+                </div>
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '8px'
+                }}>
+                  <div style={{flex: 1}}>
+                    <p className="text-sm font-medium text-white mb-1">
+                      {step.step}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {step.detail}
+                    </p>
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    color: '#475569',
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap',
+                    marginTop: '2px',
+                    fontFamily: 'monospace'
+                  }}>
+                    {new Date(step.time).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit'
+                    })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Analyst Decision Section */}
       <div className="mb-8 p-6 rounded-xl border border-gray-700"
         style={{background: '#0d1526'}}>
