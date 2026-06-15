@@ -202,6 +202,113 @@ function Results() {
         </p>
       </div>
 
+      {/* Risk Score Breakdown (Explainability Panel) */}
+      {data.risk_breakdown &&
+       data.risk_breakdown.length > 0 && (
+        <div className="mb-6 p-6 rounded-xl border
+          border-gray-700"
+          style={{background: '#0d1526'}}>
+
+          <h3 className="text-xs font-medium
+            text-gray-400 tracking-widest
+            uppercase mb-1">
+            RISK SCORE BREAKDOWN
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">
+            How each signal contributed to the
+            final risk score
+          </p>
+
+          <div className="space-y-4">
+            {data.risk_breakdown.map((item, index) => {
+              const pct = data.risk_score > 0
+                ? Math.round(
+                    (item.contribution / data.risk_score)
+                    * 100
+                  )
+                : 0;
+
+              const barColor =
+                item.contribution >= 40
+                  ? '#ef4444'
+                  : item.contribution >= 20
+                  ? '#f59e0b'
+                  : '#10b981';
+
+              return (
+                <div key={index}>
+                  <div className="flex justify-between
+                    items-center mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium
+                        text-white">
+                        {item.source}
+                      </span>
+                      <span className="text-xs
+                        text-gray-500">
+                        {item.weight}
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold"
+                      style={{color: barColor}}>
+                      +{item.contribution} pts
+                    </span>
+                  </div>
+
+                  <div className="w-full rounded-full
+                    h-2 mb-1"
+                    style={{background: '#1e293b'}}>
+                    <div
+                      className="h-2 rounded-full
+                        transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, pct)}%`,
+                        background: barColor
+                      }}
+                    />
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    {item.reason}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 pt-4 border-t
+            border-gray-700 flex justify-between
+            items-center">
+            <span className="text-xs text-gray-500">
+              {data.risk_breakdown.length} signal
+              {data.risk_breakdown.length !== 1
+                ? 's' : ''} analyzed
+            </span>
+            <span className="text-xs font-medium px-3
+              py-1 rounded-full"
+              style={{
+                background: data.risk_score >= 70
+                  ? 'rgba(239,68,68,0.15)'
+                  : data.risk_score >= 30
+                  ? 'rgba(245,158,11,0.15)'
+                  : 'rgba(16,185,129,0.15)',
+                color: data.risk_score >= 70
+                  ? '#ef4444'
+                  : data.risk_score >= 30
+                  ? '#f59e0b'
+                  : '#10b981',
+                border: '1px solid currentColor'
+              }}>
+              {data.risk_score >= 70
+                ? 'CRITICAL THREAT'
+                : data.risk_score >= 30
+                ? 'MODERATE RISK'
+                : 'LOW RISK'}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* MITRE */}
       {mitre.length > 0 && (
         <div className="mb-6">

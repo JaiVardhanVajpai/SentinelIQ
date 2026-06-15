@@ -151,6 +151,65 @@ def investigate_url(url: str) -> dict:
     else:
         recommended_action = "No action required"
 
+    # Day 12: Explainability — risk score breakdown (sums to risk_score)
+    risk_breakdown = []
+    total_risk = float(risk_score) if risk_score else 0
+
+    malicious_val = 0
+    total_val = 1
+    try:
+        malicious_val = int(
+            threat_intel.get("malicious_engines", 0)
+        )
+        total_val = int(
+            threat_intel.get("total_engines", 1)
+        ) or 1
+    except:
+        pass
+
+    has_mitre = (
+        mitre_mapping and
+        isinstance(mitre_mapping, list) and
+        len(mitre_mapping) > 0
+    )
+
+    if total_risk > 0:
+        if has_mitre:
+            vt_contrib = round(total_risk * 0.80)
+            mitre_contrib = total_risk - vt_contrib
+            risk_breakdown = [
+                {
+                    "source": "VirusTotal",
+                    "contribution": vt_contrib,
+                    "reason": f"{malicious_val} of {total_val} engines flagged",
+                    "weight": "80%"
+                },
+                {
+                    "source": "MITRE ATT&CK",
+                    "contribution": mitre_contrib,
+                    "reason": f"Top: {mitre_mapping[0].get('technique_id','')} ({round(mitre_mapping[0].get('score',0),2)})",
+                    "weight": "20%"
+                }
+            ]
+        else:
+            risk_breakdown = [
+                {
+                    "source": "VirusTotal",
+                    "contribution": int(total_risk),
+                    "reason": f"{malicious_val} of {total_val} engines flagged",
+                    "weight": "100%"
+                }
+            ]
+    elif total_risk == 0 and has_mitre:
+        risk_breakdown = [
+            {
+                "source": "VirusTotal",
+                "contribution": 0,
+                "reason": f"0 of {total_val} engines flagged — URL appears clean",
+                "weight": "100%"
+            }
+        ]
+
     return {
         "investigation_id": inv_id,
         "timestamp": timestamp,
@@ -165,6 +224,7 @@ def investigate_url(url: str) -> dict:
         "mitre_mapping": mitre_mapping,
         "explainability": explainability,
         "ai_explanation": ai_explanation,
+        "risk_breakdown": risk_breakdown,
         "investigation_complete": True
     }
 
@@ -250,6 +310,82 @@ def investigate_ip(ip: str) -> dict:
     else:
         recommended_action = "No action required"
 
+    # Day 12: Explainability — risk score breakdown (sums to risk_score)
+    risk_breakdown = []
+    total_risk = float(risk_score) if risk_score else 0
+
+    abuse_score_val = 0
+    try:
+        abuse_score_val = float(
+            threat_intel.get("abuse_score", 0)
+        )
+    except:
+        abuse_score_val = 0
+
+    isp_val = str(
+        threat_intel.get("isp", "")
+    ).lower()
+    tor_keywords = ["tor", "exit", "relay", "anonymous"]
+    is_tor = any(kw in isp_val for kw in tor_keywords)
+
+    has_mitre = (
+        mitre_mapping and
+        isinstance(mitre_mapping, list) and
+        len(mitre_mapping) > 0
+    )
+
+    if total_risk > 0:
+        if is_tor and has_mitre:
+            abuse_contrib = round(total_risk * 0.60)
+            tor_contrib = round(total_risk * 0.25)
+            mitre_contrib = total_risk - abuse_contrib - tor_contrib
+            risk_breakdown = [
+                {
+                    "source": "AbuseIPDB",
+                    "contribution": abuse_contrib,
+                    "reason": f"Abuse confidence: {abuse_score_val}/100",
+                    "weight": "60%"
+                },
+                {
+                    "source": "Tor Detection",
+                    "contribution": tor_contrib,
+                    "reason": f"ISP: {threat_intel.get('isp','')}",
+                    "weight": "25%"
+                },
+                {
+                    "source": "MITRE ATT&CK",
+                    "contribution": mitre_contrib,
+                    "reason": f"Top: {mitre_mapping[0].get('technique_id','')} ({round(mitre_mapping[0].get('score',0),2)})",
+                    "weight": "15%"
+                }
+            ]
+        elif has_mitre:
+            abuse_contrib = round(total_risk * 0.80)
+            mitre_contrib = total_risk - abuse_contrib
+            risk_breakdown = [
+                {
+                    "source": "AbuseIPDB",
+                    "contribution": abuse_contrib,
+                    "reason": f"Abuse confidence: {abuse_score_val}/100",
+                    "weight": "80%"
+                },
+                {
+                    "source": "MITRE ATT&CK",
+                    "contribution": mitre_contrib,
+                    "reason": f"Top: {mitre_mapping[0].get('technique_id','')} ({round(mitre_mapping[0].get('score',0),2)})",
+                    "weight": "20%"
+                }
+            ]
+        else:
+            risk_breakdown = [
+                {
+                    "source": "AbuseIPDB",
+                    "contribution": int(total_risk),
+                    "reason": f"Abuse confidence: {abuse_score_val}/100",
+                    "weight": "100%"
+                }
+            ]
+
     return {
         "investigation_id": inv_id,
         "timestamp": timestamp,
@@ -264,6 +400,7 @@ def investigate_ip(ip: str) -> dict:
         "mitre_mapping": mitre_mapping,
         "explainability": explainability,
         "ai_explanation": ai_explanation,
+        "risk_breakdown": risk_breakdown,
         "investigation_complete": True
     }
 
@@ -333,6 +470,49 @@ def investigate_login(events: list) -> dict:
         }
     }
 
+    # Day 12: Explainability — risk score breakdown (sums to risk_score)
+    # NOTE: threat flags live under detection["summary"] (real output shape).
+    risk_breakdown = []
+    total_risk = float(risk_score) if risk_score else 0
+
+    summary = {}
+    if isinstance(detection, dict):
+        summary = detection.get("summary", {})
+
+    bf = summary.get("brute_force_detected", 0)
+    it = summary.get("impossible_travel_detected", 0)
+    cs = summary.get("credential_stuffing_detected", 0)
+
+    detected_count = sum([
+        1 if bf else 0,
+        1 if it else 0,
+        1 if cs else 0
+    ])
+
+    if total_risk > 0 and detected_count > 0:
+        per_detection = total_risk / detected_count
+        if bf:
+            risk_breakdown.append({
+                "source": "Brute Force",
+                "contribution": round(per_detection),
+                "reason": "Multiple failed logins from same IP",
+                "weight": f"{round(100/detected_count)}%"
+            })
+        if it:
+            risk_breakdown.append({
+                "source": "Impossible Travel",
+                "contribution": round(per_detection),
+                "reason": "Geographically impossible login sequence",
+                "weight": f"{round(100/detected_count)}%"
+            })
+        if cs:
+            risk_breakdown.append({
+                "source": "Credential Stuffing",
+                "contribution": round(per_detection),
+                "reason": "Many usernames from single IP",
+                "weight": f"{round(100/detected_count)}%"
+            })
+
     return {
         "investigation_id": inv_id,
         "timestamp": timestamp,
@@ -347,6 +527,7 @@ def investigate_login(events: list) -> dict:
         "mitre_mapping": mitre_mapping,
         "explainability": explainability,
         "ai_explanation": ai_explanation,
+        "risk_breakdown": risk_breakdown,
         "investigation_complete": True
     }
 
