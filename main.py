@@ -40,6 +40,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
         "https://sentinel-iq.vercel.app",
+        "https://sentinel-iq-nine.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
