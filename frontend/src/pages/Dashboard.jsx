@@ -45,12 +45,38 @@ function Dashboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [approved, setApproved] = useState(0);
+  const [rejected, setRejected] = useState(0);
+  const [pending, setPending] = useState(0);
 
   useEffect(() => {
     (async () => {
       try {
         const res = await api.get('/investigations');
-        setItems(res.data?.investigations || []);
+        const invs = res.data?.investigations || [];
+        setItems(invs);
+        const decisionsData = await Promise.all(
+          invs.map(async (inv) => {
+            try {
+              const d = await api.get(
+                `/investigations/${inv.investigation_id}/decision`
+              );
+              return d.data?.analyst_decision?.decision
+                || null;
+            } catch {
+              return null;
+            }
+          })
+        );
+        const approvedCount = decisionsData
+          .filter(d => d === 'approve').length;
+        const rejectedCount = decisionsData
+          .filter(d => d === 'reject').length;
+        const pendingCount = decisionsData
+          .filter(d => d === null).length;
+        setApproved(approvedCount);
+        setRejected(rejectedCount);
+        setPending(pendingCount);
       } catch (e) {
         setError(e?.message || 'Failed to load dashboard data.');
       } finally {
@@ -134,6 +160,45 @@ function Dashboard() {
         <StatCard label="Malicious" value={malicious} accent="text-red-400" />
         <StatCard label="Clean" value={clean} accent="text-green-400" />
         <StatCard label="Avg Risk Score" value={avgRisk} accent="text-amber-400" />
+
+        <div className="bg-gray-800 rounded-xl p-4
+          border border-gray-700">
+          <p className="text-xs text-gray-400 uppercase
+            tracking-widest mb-2">TRUE POSITIVES</p>
+          <p className="text-3xl font-bold"
+            style={{color: '#10b981'}}>
+            {approved}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Approved by analyst
+          </p>
+        </div>
+
+        <div className="bg-gray-800 rounded-xl p-4
+          border border-gray-700">
+          <p className="text-xs text-gray-400 uppercase
+            tracking-widest mb-2">FALSE POSITIVES</p>
+          <p className="text-3xl font-bold"
+            style={{color: '#ef4444'}}>
+            {rejected}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Rejected by analyst
+          </p>
+        </div>
+
+        <div className="bg-gray-800 rounded-xl p-4
+          border border-gray-700">
+          <p className="text-xs text-gray-400 uppercase
+            tracking-widest mb-2">PENDING REVIEW</p>
+          <p className="text-3xl font-bold"
+            style={{color: '#f59e0b'}}>
+            {pending}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Awaiting decision
+          </p>
+        </div>
       </div>
 
       {/* Charts */}

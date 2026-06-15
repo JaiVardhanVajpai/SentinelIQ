@@ -19,8 +19,10 @@ from investigator import (
     investigate_ip,
     investigate_login,
     save_investigation,
+    save_analyst_decision,
 )
 from database import get_db
+from models import AnalystDecision
 import requests
 import os
 from dotenv import load_dotenv
@@ -565,3 +567,69 @@ async def download_report(investigation_id: str):
         )
     except Exception as e:
         return {"error": f"PDF generation failed: {str(e)}"}
+
+
+# ─────────────────────────────────────────
+# Day 11: Human-in-the-loop analyst decision
+# ─────────────────────────────────────────
+@app.post("/investigations/{investigation_id}/decision")
+async def submit_decision(
+    investigation_id: str,
+    decision_data: AnalystDecision
+):
+    valid_decisions = ["approve", "reject", "escalate"]
+    if decision_data.decision.lower() not in valid_decisions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid decision. Must be: approve, reject, or escalate"
+        )
+    success = await save_analyst_decision(
+        investigation_id=investigation_id,
+        decision=decision_data.decision.lower(),
+        analyst_note=decision_data.analyst_note or ""
+    )
+    if success:
+        return {
+            "message": f"Decision saved: {decision_data.decision}",
+            "investigation_id": investigation_id,
+            "decision": decision_data.decision.lower(),
+            "analyst_note": decision_data.analyst_note
+        }
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail="Investigation not found"
+        )
+
+
+@app.get("/investigations/{investigation_id}/decision")
+async def get_decision(investigation_id: str):
+    try:
+        db = get_db()
+        result = await db.find_one(
+            {"investigation_id": investigation_id},
+            {"_id": 0, "analyst_decision": 1,
+             "investigation_id": 1}
+        )
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail="Investigation not found"
+            )
+        if "analyst_decision" not in result:
+            return {
+                "investigation_id": investigation_id,
+                "analyst_decision": None,
+                "message": "No decision made yet"
+            }
+        return {
+            "investigation_id": investigation_id,
+            "analyst_decision": result["analyst_decision"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )

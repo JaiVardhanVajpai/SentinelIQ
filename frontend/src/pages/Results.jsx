@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BASE_URL } from '../api';
+import api, { BASE_URL } from '../api';
 import {
   verdictTheme,
   severityTheme,
@@ -40,6 +40,11 @@ function Card({ title, children }) {
 
 function Results() {
   const [data, setData] = useState(null);
+  const [decision, setDecision] = useState(null);
+  const [analystNote, setAnalystNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [decisionError, setDecisionError] = useState("");
+  const [decisionSuccess, setDecisionSuccess] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,6 +57,52 @@ function Results() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    const loadDecision = async () => {
+      if (!data?.investigation_id) return;
+      try {
+        const res = await api.get(
+          `/investigations/${data.investigation_id}/decision`
+        );
+        if (res.data?.analyst_decision) {
+          setDecision(res.data.analyst_decision);
+        }
+      } catch (err) {
+        console.log("No decision yet");
+      }
+    };
+    loadDecision();
+  }, [data]);
+
+  const submitDecision = async (decisionType) => {
+    if (submitting) return;
+    setSubmitting(true);
+    setDecisionError("");
+    setDecisionSuccess("");
+    try {
+      await api.post(
+        `/investigations/${data.investigation_id}/decision`,
+        {
+          decision: decisionType,
+          analyst_note: analystNote
+        }
+      );
+      setDecision({
+        decision: decisionType,
+        analyst_note: analystNote,
+        decided_at: new Date().toISOString(),
+        decided_by: "analyst"
+      });
+      setDecisionSuccess(
+        `Decision recorded: ${decisionType.toUpperCase()}`
+      );
+    } catch (err) {
+      setDecisionError("Failed to save decision. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (!data) {
     return (
@@ -229,6 +280,165 @@ function Results() {
               ))}
           </div>
         </Card>
+      </div>
+
+      {/* Analyst Decision Section */}
+      <div className="mb-8 p-6 rounded-xl border border-gray-700"
+        style={{background: '#0d1526'}}>
+
+        <h3 className="text-xs font-medium text-gray-400
+          tracking-widest uppercase mb-4">
+          ANALYST DECISION
+        </h3>
+
+        {decision ? (
+          <div className="rounded-lg p-4 border"
+            style={{
+              background: decision.decision === 'approve'
+                ? 'rgba(16,185,129,0.1)'
+                : decision.decision === 'reject'
+                ? 'rgba(239,68,68,0.1)'
+                : 'rgba(245,158,11,0.1)',
+              borderColor: decision.decision === 'approve'
+                ? '#10b981'
+                : decision.decision === 'reject'
+                ? '#ef4444'
+                : '#f59e0b'
+            }}>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">
+                {decision.decision === 'approve' ? '✓'
+                 : decision.decision === 'reject' ? '✗'
+                 : '↑'}
+              </span>
+              <div>
+                <p className="font-bold text-white text-lg uppercase">
+                  {decision.decision}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {decision.decided_at
+                    ? new Date(decision.decided_at)
+                      .toLocaleString()
+                    : 'Just now'}
+                  {' '}&bull;{' '}
+                  {decision.decided_by || 'analyst'}
+                </p>
+              </div>
+            </div>
+            {decision.analyst_note && (
+              <p className="text-sm text-gray-300 mt-2
+                border-t border-gray-600 pt-2">
+                Note: {decision.analyst_note}
+              </p>
+            )}
+            <button
+              onClick={() => {
+                setDecision(null);
+                setDecisionSuccess("");
+                setAnalystNote("");
+              }}
+              className="mt-3 text-xs text-gray-500
+                hover:text-gray-300 underline">
+              Change decision
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm text-gray-400 mb-4">
+              Review the investigation above and record
+              your analyst decision.
+            </p>
+
+            <textarea
+              value={analystNote}
+              onChange={(e) => setAnalystNote(e.target.value)}
+              placeholder="Add analyst note (optional)..."
+              rows={2}
+              className="w-full mb-4 px-3 py-2 rounded-lg
+                text-sm text-gray-300
+                border border-gray-700
+                focus:outline-none focus:border-blue-500"
+              style={{background: '#111c35'}}
+            />
+
+            {decisionError && (
+              <p className="text-red-400 text-sm mb-3">
+                {decisionError}
+              </p>
+            )}
+
+            {decisionSuccess && (
+              <p className="text-green-400 text-sm mb-3">
+                {decisionSuccess}
+              </p>
+            )}
+
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => submitDecision('approve')}
+                disabled={submitting}
+                className="py-3 px-4 rounded-lg font-bold
+                  text-sm uppercase tracking-wider
+                  transition-all duration-200
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: 'rgba(16,185,129,0.15)',
+                  border: '1px solid #10b981',
+                  color: '#10b981'
+                }}
+                onMouseEnter={e =>
+                  e.target.style.background =
+                  'rgba(16,185,129,0.3)'}
+                onMouseLeave={e =>
+                  e.target.style.background =
+                  'rgba(16,185,129,0.15)'}>
+                {submitting ? '...' : '✓ Approve'}
+              </button>
+
+              <button
+                onClick={() => submitDecision('reject')}
+                disabled={submitting}
+                className="py-3 px-4 rounded-lg font-bold
+                  text-sm uppercase tracking-wider
+                  transition-all duration-200
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: 'rgba(239,68,68,0.15)',
+                  border: '1px solid #ef4444',
+                  color: '#ef4444'
+                }}
+                onMouseEnter={e =>
+                  e.target.style.background =
+                  'rgba(239,68,68,0.3)'}
+                onMouseLeave={e =>
+                  e.target.style.background =
+                  'rgba(239,68,68,0.15)'}>
+                {submitting ? '...' : '✗ Reject'}
+              </button>
+
+              <button
+                onClick={() => submitDecision('escalate')}
+                disabled={submitting}
+                className="py-3 px-4 rounded-lg font-bold
+                  text-sm uppercase tracking-wider
+                  transition-all duration-200
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: 'rgba(245,158,11,0.15)',
+                  border: '1px solid #f59e0b',
+                  color: '#f59e0b'
+                }}
+                onMouseEnter={e =>
+                  e.target.style.background =
+                  'rgba(245,158,11,0.3)'}
+                onMouseLeave={e =>
+                  e.target.style.background =
+                  'rgba(245,158,11,0.15)'}>
+                {submitting ? '...' : '↑ Escalate'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Actions */}

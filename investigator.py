@@ -372,3 +372,34 @@ async def save_investigation(result: dict):
         print(f"[SAVED] MongoDB: {result.get('investigation_id')}")
     except Exception as e:
         print(f"[ERROR] MongoDB save failed: {e}")
+
+
+# ─────────────────────────────────────────
+# Day 11: Human-in-the-loop analyst decision
+# ─────────────────────────────────────────
+async def save_analyst_decision(
+    investigation_id: str,
+    decision: str,
+    analyst_note: str = ""
+):
+    try:
+        db = get_db()
+        decision_record = {
+            "decision": decision,
+            "analyst_note": analyst_note,
+            "decided_at": datetime.datetime.utcnow().isoformat(),
+            "decided_by": "analyst"
+        }
+        result = await db.update_one(
+            {"investigation_id": investigation_id},
+            {"$set": {"analyst_decision": decision_record}}
+        )
+        if result.modified_count == 1:
+            print(f"[DECISION] {investigation_id}: {decision}")
+            return True
+        else:
+            print(f"[ERROR] Investigation not found: {investigation_id}")
+            return False
+    except Exception as e:
+        print(f"[ERROR] Decision save failed: {e}")
+        return False

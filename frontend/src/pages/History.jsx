@@ -17,7 +17,23 @@ function History() {
       const list = res.data?.investigations || [];
       // Newest first (backend already sorts, but be safe)
       list.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
-      setItems(list);
+      const enriched = await Promise.all(
+        list.map(async (inv) => {
+          try {
+            const decRes = await api.get(
+              `/investigations/${inv.investigation_id}/decision`
+            );
+            return {
+              ...inv,
+              analyst_decision:
+                decRes.data?.analyst_decision || null
+            };
+          } catch {
+            return { ...inv, analyst_decision: null };
+          }
+        })
+      );
+      setItems(enriched);
     } catch (e) {
       setError(e?.message || 'Failed to load investigations.');
     } finally {
@@ -105,6 +121,43 @@ function History() {
                   >
                     {theme.label}
                   </span>
+                  {item.analyst_decision ? (
+                    <span
+                      className="text-xs font-bold px-2 py-0.5
+                        rounded-full ml-2"
+                      style={{
+                        background:
+                          item.analyst_decision.decision === 'approve'
+                          ? 'rgba(16,185,129,0.15)'
+                          : item.analyst_decision.decision === 'reject'
+                          ? 'rgba(239,68,68,0.15)'
+                          : 'rgba(245,158,11,0.15)',
+                        color:
+                          item.analyst_decision.decision === 'approve'
+                          ? '#10b981'
+                          : item.analyst_decision.decision === 'reject'
+                          ? '#ef4444'
+                          : '#f59e0b',
+                        border: '1px solid currentColor'
+                      }}>
+                      {item.analyst_decision.decision === 'approve'
+                        ? '✓ APPROVED'
+                        : item.analyst_decision.decision === 'reject'
+                        ? '✗ REJECTED'
+                        : '↑ ESCALATED'}
+                    </span>
+                  ) : (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full
+                        ml-2"
+                      style={{
+                        background: 'rgba(107,114,128,0.15)',
+                        color: '#6b7280',
+                        border: '1px solid #6b7280'
+                      }}>
+                      ⏳ PENDING
+                    </span>
+                  )}
                 </div>
                 <p className="font-mono text-sm text-gray-200 truncate">
                   {item.input_value}
