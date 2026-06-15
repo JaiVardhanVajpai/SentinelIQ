@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Results from './pages/Results';
 import History from './pages/History';
 import Dashboard from './pages/Dashboard';
+import Footer from './components/Footer';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/history" element={<History />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
+        <Footer />
       </div>
     </Router>
   );
