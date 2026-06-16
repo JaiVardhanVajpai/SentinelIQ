@@ -11,7 +11,21 @@
 
 <br/>
 
-> **A security team can get nearly 3,000 alerts in a single day. Most are never looked at. SentinelIQ helps a human look at the important ones — fast, and with a clear reason for every decision.**
+> A security team can get nearly 3,000 alerts in a single day.  
+> Most are never looked at.  
+> **SentinelIQ helps a human look at the important ones — fast, and with a clear reason for every decision.**
+
+## See it live
+
+You don't have to take my word for it — try it yourself.
+
+| | Link |
+|---|---|
+| **The app** | https://sentinel-iq-nine.vercel.app |
+| **The backend (API)** | https://sentineliq-d0ot.onrender.com |
+| **Interactive API docs** | https://sentineliq-d0ot.onrender.com/docs |
+
+> Open the app, type `185.220.101.45` into the box, and press **Investigate**. Watch a full threat investigation happen in front of you.
 
 ---
 
@@ -29,20 +43,6 @@ Imagine a security analyst as a doctor in a very crowded emergency room. Hundred
 The machine does the tedious lookup. The person makes the decision. Every step is written down.
 
 **No magic black box. No made-up answers. Every conclusion can be traced back to real evidence.**
-
----
-
-## See it live
-
-You don't have to take my word for it — try it yourself.
-
-| | Link |
-|---|---|
-| **The app** | https://sentinel-iq-nine.vercel.app |
-| **The backend (API)** | https://sentineliq-d0ot.onrender.com |
-| **Interactive API docs** | https://sentineliq-d0ot.onrender.com/docs |
-
-> Open the app, type `185.220.101.45` into the box, and press **Investigate**. Watch a full threat investigation happen in front of you.
 
 ---
 
