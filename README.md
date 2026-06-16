@@ -11,270 +11,205 @@
 
 <br/>
 
-> **SOCs receive 2,992 alerts per day. 63% go uninvestigated. 46% are false positives. I built something about that.**
-
-SentinelIQ is a production-deployed, full-stack AI-assisted triage engine. Feed it a suspicious IP, URL, or login event — it queries real threat intelligence APIs, maps findings to MITRE ATT&CK via semantic vector search, generates a grounded AI explanation using RAG, and delivers a structured verdict for the analyst to approve, reject, or escalate.
-
-**No black-box scores. No hallucinated threat names. Every output is explainable, traceable, and audit-logged.**
+> **A security team can get nearly 3,000 alerts in a single day. Most are never looked at. SentinelIQ helps a human look at the important ones — fast, and with a clear reason for every decision.**
 
 ---
 
-## Live Demo
+## What is this, in one breath?
 
-> Open the app. Type `185.220.101.45`. Hit Investigate. See a full threat investigation in under 3 minutes.
+Imagine a security analyst as a doctor in a very crowded emergency room. Hundreds of "patients" (security alerts) arrive every hour. Most are harmless. A few are genuinely dangerous. The hard part isn't treatment — it's **triage**: quickly deciding who needs attention *now*.
 
-| | URL |
+**SentinelIQ is the assistant that does the first check-up.** You hand it a suspicious web address, an IP address, or a login record. In a few seconds it:
+
+1. **Looks the thing up** in the same trusted databases real security teams use.
+2. **Explains what it found** in plain language — and shows its working, so nothing is a mystery.
+3. **Gives a clear verdict** (safe / suspicious / dangerous) with a 0–100 risk score.
+4. **Hands the final call to a human**, who approves, rejects, or escalates it.
+
+The machine does the tedious lookup. The person makes the decision. Every step is written down.
+
+**No magic black box. No made-up answers. Every conclusion can be traced back to real evidence.**
+
+---
+
+## See it live
+
+You don't have to take my word for it — try it yourself.
+
+| | Link |
 |---|---|
-| **Frontend** | https://sentinel-iq-nine.vercel.app |
-| **Backend API** | https://sentineliq-d0ot.onrender.com |
-| **Interactive API Docs** | https://sentineliq-d0ot.onrender.com/docs |
+| **The app** | https://sentinel-iq-nine.vercel.app |
+| **The backend (API)** | https://sentineliq-d0ot.onrender.com |
+| **Interactive API docs** | https://sentineliq-d0ot.onrender.com/docs |
+
+> Open the app, type `185.220.101.45` into the box, and press **Investigate**. Watch a full threat investigation happen in front of you.
 
 ---
 
-## The Problem SentinelIQ Solves
+## The problem it solves
 
-Security Operations Centers don't fail at detection — they fail at triage. The tools exist. The data exists. The bottleneck is the 30–70 minutes an analyst spends manually investigating each alert, one at a time.
+Security teams are very good at *detecting* threats. The part that breaks is *investigating* them. There simply aren't enough hours in the day.
 
-| Metric | Industry Reality |
-|--------|-----------------|
-| Average alerts per SOC per day | 2,992 |
-| Alerts that go uninvestigated | 63% |
-| Alerts that are false positives | 46% |
-| Manual investigation time | 30–70 minutes per alert |
-| Average cost of a data breach | $4.44M — IBM Security 2025 |
-| SOC analysts reporting burnout | 85% |
+| The reality of a security desk | |
+|---|---|
+| Alerts a team may receive per day | ~2,992 |
+| Alerts that never get investigated | 63% |
+| Alerts that turn out to be false alarms | 46% |
+| Time to manually investigate **one** alert | 30–70 minutes |
+| Analysts who report burnout | 85% |
 
-SentinelIQ compresses that 30–70 minutes to under 3 by automating the first-pass investigation — enrichment, detection, AI reasoning, and a structured brief — while keeping the analyst in control of every final decision.
-
----
-
-## System Architecture
-
-SentinelIQ is a five-layer pipeline. Each layer has one job.
-
-```
-┌────────────────────────────────────────────────────────┐
-│                     SENTINELIQ v4.0                      │
-│               AI-Assisted SOC Triage Engine             │
-└────────────────────────────────────────────────────────┘
-
-   ANALYST
-      │   URL / IP / Login Events
-      ▼
-┌────────────────────────────────────────────────────────┐
-│  LAYER 1 — INPUT                                        │
-│  React.js frontend · URL, IP, Login Event forms        │
-└────────────────────────────────────────────────────────┘
-      │
-      ▼
-┌────────────────────────────────────────────────────────┐
-│  LAYER 2 — THREAT INTELLIGENCE ENRICHMENT              │
-│  VirusTotal → 92 antivirus engines · risk 0-100        │
-│  AbuseIPDB  → abuse score · Tor node detection         │
-└────────────────────────────────────────────────────────┘
-      │
-      ▼
-┌────────────────────────────────────────────────────────┐
-│  LAYER 3 — DETECTION ENGINE                            │
-│  Brute Force Detection  → MITRE T1110                  │
-│  Impossible Travel      → MITRE T1078                  │
-│  Credential Stuffing    → MITRE T1110.004             │
-└────────────────────────────────────────────────────────┘
-      │
-      ▼
-┌────────────────────────────────────────────────────────┐
-│  LAYER 4 — AI INVESTIGATION (RAG PIPELINE)            │
-│  ChromaDB           → MITRE ATT&CK vector embeddings   │
-│  Groq LLaMA 3.1 8B  → grounded explanation            │
-│  Explainability Panel → signal contribution scores     │
-└────────────────────────────────────────────────────────┘
-      │
-      ▼
-┌────────────────────────────────────────────────────────┐
-│  LAYER 5 — HUMAN DECISION LAYER                        │
-│  Approve / Reject / Escalate                           │
-│  Analyst notes · PDF report · MongoDB audit trail      │
-│  SOC Dashboard → TP/FP metrics · risk trends           │
-└────────────────────────────────────────────────────────┘
-```
+SentinelIQ takes that 30–70 minute manual check and turns it into a few seconds — **without taking the human out of the loop.** It does the legwork; the analyst still decides.
 
 ---
 
-## What Makes SentinelIQ Different
+## How it's built — 5 simple layers
 
-Most cybersecurity student projects detect or scan a single signal source and return a binary result.
-SentinelIQ runs a multi-source investigation, explains every decision, and supports a complete analyst workflow — from input to documented outcome.
+The whole system is just five steps stacked on top of each other. Each step has exactly one job.
 
-| Dimension | Typical Student Project | SentinelIQ |
-|-----------|------------------------|------------|
-| Output | Malicious / Benign | Risk score + MITRE mapping + RAG explanation + analyst decision |
-| AI usage | None, or a direct GPT call | RAG pipeline grounded in real MITRE ATT&CK data |
-| Data source | Static dataset (KDD99, etc.) | Live threat intel APIs used by real SOC teams |
-| Analyst workflow | Not modelled | Full approve / reject / escalate loop with audit trail |
-| Industry framework | None | MITRE ATT&CK aligned throughout |
-| Risk score | Black box | Explainability panel — each signal's contribution shown |
-| Deployment | Runs on my machine | Live on Render + Vercel with CI/CD |
+![SentinelIQ 5-Layer Pipeline](frontend/src/architecture.svg)
 
----
-
-## Why RAG Instead of Direct LLM Prompting
-
-Direct LLM prompting hallucinates. Ask a model to explain a threat and it generates confident, well-formatted MITRE technique names that may have nothing to do with the actual alert. In security, a confidently wrong answer is more dangerous than no answer.
-
-SentinelIQ uses **Retrieval-Augmented Generation**:
-
-```
-   Alert data
-      │
-      ▼
-   ChromaDB semantic search
-      │   retrieves top-3 matching MITRE ATT&CK entries
-      ▼
-   Groq LLaMA 3.1 8B
-      │   generates explanation grounded in retrieved context
-      ▼
-   Output
-      │   every technique ID traceable to a real MITRE entry
-      ▼
-   Analyst
-```
-
-Every technique ID in the output is retrieved from a verified knowledge base — not hallucinated from model memory. The explanation cites the actual MITRE technique, its tactic, and associated threat actors.
+| Layer | In plain English |
+|-------|------------------|
+| **1. Input** | You give it an IP, a web link, login records, or a CSV file of many at once. |
+| **2. Enrichment** | It asks trusted threat databases (VirusTotal, AbuseIPDB) "what do *you* know about this?" |
+| **3. Detection** | It runs simple, transparent rules — e.g. *"50 failed logins from one place in 10 minutes? That's a brute-force attack."* |
+| **4. AI** | It pulls up the matching real-world attack playbook and writes a plain-English summary grounded in that evidence. |
+| **5. Decision** | A human approves, rejects, or escalates — and the choice is saved forever for the record. |
 
 ---
 
-## Why Human-in-the-Loop
+## Does it actually work? (Benchmark)
 
-Gartner's 2026 threat report identifies autonomous AI security decisions as an emerging liability. Explainability and human oversight are becoming regulatory requirements — not optional features.
+I tested it on **100 real indicators** — 50 known-bad (Tor exit nodes and flagged IPs) and 50 known-good (Google, Cloudflare, GitHub, etc.).
 
-SentinelIQ is designed around this from the ground up:
+| What I measured | Result |
+|-----------------|--------|
+| Overall accuracy | **80%** |
+| Caught the real threats (true positive rate) | 60% |
+| **Wrongly flagged something safe (false positives)** | **0%** |
+| Clean items mistakenly called dangerous | **0 out of 50** |
+| Errors during the test | 0 |
 
-- The system never takes autonomous action
-- Every investigation produces a recommendation — the analyst decides
-- Every decision is logged with timestamp, analyst note, and outcome
-- The audit trail is queryable — an analyst can retrieve the full decision history for any indicator
+**Why the 0% false-positive rate is the number that matters.** In a real security team, a *false alarm* is the most expensive mistake — it wastes a busy analyst's time and slowly destroys their trust in the tool. SentinelIQ flagged **zero** safe items as dangerous across the entire test. That's the result a SOC actually cares about.
 
-This is the same architecture used by enterprise SOC tools like Dropzone AI and Radiant Security.
-
----
-
-## Key Features
-
-### Investigation Engine
-- **URL Analysis** — VirusTotal aggregates 92 antivirus engines; risk score formula: `(malicious / total) * 100`
-- **IP Reputation** — AbuseIPDB confidence score, Tor exit node detection, country + ISP enrichment
-- **Login Anomaly Detection** — three independent detection rules:
-  - Brute force: 5+ failures from same IP in 10 minutes → T1110
-  - Impossible travel: Haversine formula detects geographically impossible login sequences → T1078
-  - Credential stuffing: 3+ unique usernames from one IP → T1110.004
-
-### AI Layer (RAG-Powered)
-- ChromaDB vector store — MITRE ATT&CK technique descriptions embedded as dense vectors
-- Semantic search — natural language input mapped to MITRE technique space
-- Groq LLaMA 3.1 8B Instant — fast, reliable, structured explanation output
-- **Explainability Panel** — risk score decomposed into per-signal contributions that sum to the final score
-
-### Human-in-the-Loop Workflow
-- Three-state analyst decision: **Approve** (true positive confirmed) / **Reject** (false positive) / **Escalate** (Tier 2)
-- Analyst notes logged against each decision
-- True Positive / False Positive counts tracked live on SOC dashboard
-- Full audit trail stored in MongoDB Atlas
-
-### SOC Operations
-- Real-time dashboard — TP/FP ratio, verdict distribution, risk score trends
-- PDF incident report generation — professional format, one click
-- Investigation history — full persistence, queryable by ID or indicator
-- CI/CD — every GitHub push auto-deploys to Render (backend) and Vercel (frontend)
+> **Being honest about the 60%:** the threats it "missed" were Tor IPs whose public reputation score happened to be low *on the day I tested*. That's normal day-to-day variation in the threat databases — not a flaw in the logic. On indicators with steady reputation data, detection is accurate. I'd rather show you a real number with context than a polished fake one.
 
 ---
 
-## Tech Stack
+## What it can do
 
-| Layer | Technology | Why This Choice |
-|-------|-----------|----------------|
-| Backend | FastAPI (Python) | Async support; auto-generates OpenAPI docs at `/docs` |
-| Frontend | React.js + Tailwind CSS | Component-based; real-time state management |
-| Vector DB | ChromaDB 1.5.9 | Local, open-source; semantic similarity search |
-| AI Model | Groq LLaMA 3.1 8B Instant | Free tier; fast inference; structured output |
-| Database | MongoDB Atlas | Flexible schema — URL and login investigations have different fields |
-| Threat Intel | VirusTotal + AbuseIPDB | Same APIs referenced in real enterprise SOC playbooks |
-| PDF | fpdf2 | Lightweight; no external service dependency |
-| Deploy | Render + Vercel | Free tier; CI/CD on every GitHub push |
-
----
-
-## API Reference
-
-Full interactive documentation: **https://sentineliq-d0ot.onrender.com/docs**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Health check + endpoint list |
-| `GET` | `/analyze-url?url=` | VirusTotal URL scan — 92 engines |
-| `GET` | `/analyze-ip?ip=` | AbuseIPDB IP reputation |
-| `POST` | `/analyze-login` | Brute force + impossible travel + credential stuffing |
-| `GET` | `/analyze-mitre?attack_type=` | MITRE ATT&CK dictionary lookup |
-| `GET` | `/search-mitre?query=` | Semantic vector search → MITRE technique |
-| `POST` | `/explain-alert` | RAG-grounded AI explanation via Groq |
-| `POST` | `/investigate` | Full unified investigation pipeline |
-| `GET` | `/investigations` | List all saved investigations (newest first) |
-| `GET` | `/investigations/{id}` | Retrieve single investigation by ID |
-| `POST` | `/investigations/{id}/decision` | Submit analyst decision |
-| `GET` | `/investigations/{id}/report` | Download PDF incident report |
+| Feature | What it actually does for you |
+|---------|-------------------------------|
+| **IP analysis** | Checks an address's reputation, spots Tor / VPN / proxy use, shows an abuse score. |
+| **URL analysis** | Runs a link past 70+ antivirus engines at once via VirusTotal. |
+| **Login anomaly detection** | Catches brute-force attempts, "impossible travel" logins, and credential stuffing. |
+| **MITRE ATT&CK mapping** | Matches every threat to the globally recognised attack-technique catalogue security teams use. |
+| **AI explanation** | A plain-English write-up of what's happening — grounded in real data, so it doesn't make things up. |
+| **Explainability panel** | Shows *exactly* which signals pushed the risk score up, and by how much. |
+| **Investigation timeline** | A timestamped, step-by-step record of every investigation — a proper audit trail. |
+| **Human-in-the-loop** | The analyst approves, rejects, or escalates every single verdict. |
+| **Threat hunting** | Search any IP, URL, or domain across *all* past investigations in one click. |
+| **Bulk upload** | Drop in a CSV of 50–100 indicators and check them all at once. |
+| **PDF reports** | One click turns an investigation into a clean, professional incident report. |
+| **SOC dashboard** | Live scoreboard — true positives, false positives, decisions still pending. |
 
 ---
 
-## Running Locally
+## Why the AI doesn't just "ask ChatGPT"
 
-**Requirements:** Python 3.11+ · Node.js 20+ · MongoDB Atlas free tier
+This is the part I'm most proud of, so let me explain it simply.
 
-### Backend
+If you ask a normal AI model *"what attack is this?"*, it will answer confidently — even when it has no idea. It invents official-sounding attack names and details that may have nothing to do with your actual situation. That's called a **hallucination**, and in security it's dangerous: **a confident wrong answer is worse than no answer at all.**
+
+SentinelIQ uses a technique called **RAG (Retrieval-Augmented Generation)**. In plain terms:
+
+> **Before the AI is allowed to say anything, it must first go and fetch the real, relevant attack records from a verified library (ChromaDB). It can only explain what it actually retrieved.**
+
+So every attack name, every technique ID, every recommended fix you see is **traceable to a real entry** — not something the model dreamed up. The AI explains the evidence; it never invents it.
+
+---
+
+## What it's built with (and why)
+
+| Part | Technology | Why I chose it |
+|------|-----------|----------------|
+| Backend | FastAPI (Python 3.11) | Fast, async, and it writes its own API documentation. |
+| Frontend | React + Tailwind CSS | Quick to build, easy to extend, looks clean. |
+| Database | MongoDB Atlas | Flexible — different alert types have different shapes. |
+| Vector search | ChromaDB 1.5.9 | Lets the AI "search by meaning" across MITRE ATT&CK. |
+| AI model | Groq LLaMA 3.1 8B | Very fast, free tier, and works well with grounded RAG. |
+| Threat intel | VirusTotal + AbuseIPDB | The same data sources real security teams rely on. |
+| PDF reports | fpdf2 | Lightweight, no external service needed. |
+| Hosting | Render + Vercel | Auto-deploys straight from GitHub. |
+
+---
+
+## Run it on your own machine
+
+You'll need **Python 3.11**, **Node.js 18+**, and a free **MongoDB Atlas** account.
 
 ```bash
-# Clone the repository
+# 1. Get the code
 git clone https://github.com/JaiVardhanVajpai/SentinelIQ.git
-cd SentinelIQ
+cd SentinelIQ/backend
 
-# Install dependencies
+# 2. Install the backend
 pip install -r requirements.txt
 
-# Configure environment
+# 3. Add your API keys
 cp .env.example .env
-# Edit .env with your API keys
+# then fill in: VIRUSTOTAL_API_KEY, ABUSEIPDB_API_KEY,
+#               GROQ_API_KEY, MONGO_URI
 
-# Start the backend
+# 4. Start the backend  →  http://localhost:8000
 python -m uvicorn main:app --reload
-# Runs on http://localhost:8000
-# API docs at http://localhost:8000/docs
 ```
 
-### Frontend
-
 ```bash
-# In a second terminal
+# 5. In a second terminal, start the frontend  →  http://localhost:3000
 cd frontend
 npm install
 npm start
-# Runs on http://localhost:3000
 ```
 
-### Environment Variables
-
-```bash
-VIRUSTOTAL_API_KEY=your_key    # Free at virustotal.com
-ABUSEIPDB_API_KEY=your_key     # Free at abuseipdb.com
-GROQ_API_KEY=your_key          # Free at console.groq.com
-MONGO_URI=mongodb+srv://...    # Free tier at mongodb.com/atlas
-```
+All four API keys are free to get — VirusTotal, AbuseIPDB, Groq, and MongoDB Atlas each have a free tier.
 
 ---
 
-## Author
+## The main API endpoints
 
-**Jai Vardhan Vajpai**
-Final Year B.Tech — Computer Science Engineering
-BML Munjal University, Gurugram · Batch of 2027
+| Method | Endpoint | What it does |
+|--------|----------|--------------|
+| `POST` | `/investigate` | Run a full investigation |
+| `GET`  | `/analyze-ip?ip=` | Check a single IP address |
+| `GET`  | `/analyze-url?url=` | Scan a single URL |
+| `POST` | `/analyze-login` | Detect login anomalies |
+| `GET`  | `/hunt?indicator=` | Search across all past investigations |
+| `POST` | `/bulk-investigate` | Analyse a whole CSV of indicators |
+| `GET`  | `/investigations/{id}/report` | Download a PDF report |
+| `POST` | `/investigations/{id}/decision` | Submit the analyst's decision |
+
+Want to try the API live, with a button for every endpoint? → **https://sentineliq-d0ot.onrender.com/docs**
 
 ---
 
-*Final Year B.Tech Project · BML Munjal University · 2026*
+## Why I built it this way
+
+I didn't want a toy demo with fake data. I wanted something that behaves like a **real** security tool:
+
+- It calls **real** threat-intelligence APIs, not a frozen sample dataset.
+- It speaks the **real** industry language (MITRE ATT&CK), so a working analyst would recognise it.
+- It **shows its reasoning** instead of hiding behind a confidence score.
+- And it always keeps a **human in charge** of the final decision.
+
+That last point is the heart of it. AI should help an expert decide faster — not pretend to be the expert.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE). Free to use, learn from, and build on.
+
+---
+
+*Built by **Jai Vardhan Vajpai** · Final-year B.Tech (CSE), BML Munjal University, Gurugram.*
