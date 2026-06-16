@@ -48,6 +48,7 @@ function Dashboard() {
   const [approved, setApproved] = useState(0);
   const [rejected, setRejected] = useState(0);
   const [pending, setPending] = useState(0);
+  const [showMitreInfo, setShowMitreInfo] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -133,9 +134,9 @@ function Dashboard() {
     .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))
     .slice(0, 6);
 
-  const getRiskBarColor = (value) => {
-    if (value >= 70) return '#ef4444';
-    if (value >= 30) return '#f59e0b';
+  const getRiskBarColor = (score) => {
+    if (score >= 70) return '#ef4444';
+    if (score >= 30) return '#f59e0b';
     return '#10b981';
   };
 
@@ -150,6 +151,16 @@ function Dashboard() {
   });
   const topMitre = Object.entries(mitreCount).sort((a, b) => b[1] - a[1])[0];
   const topMitreName = topMitre ? topMitre[0] : 'N/A';
+
+  const mitreExplanations = {
+    'T1566': 'Phishing — attacker sends deceptive emails or messages to trick users into revealing credentials or installing malware.',
+    'T1090': 'Proxy — attacker routes traffic through intermediary systems (like Tor) to hide their real location.',
+    'T1110': 'Brute Force — attacker tries many passwords systematically to gain unauthorized access.',
+    'T1078': 'Valid Accounts — attacker uses stolen legitimate credentials to access systems.',
+    'T1059': 'Command & Scripting — attacker runs malicious scripts to execute commands on victim systems.',
+  };
+  const mitreInfo = mitreExplanations[topMitreName] ||
+    'A commonly observed attack technique detected across investigations.';
 
   if (total === 0) {
     return (
@@ -212,17 +223,33 @@ function Dashboard() {
           </p>
         </div>
 
-        <div className="bg-gray-800 rounded-xl p-4
-          border border-gray-700">
+        <div
+          onClick={() => setShowMitreInfo((s) => !s)}
+          className="bg-gray-800 rounded-xl p-4
+          border border-gray-700"
+          style={{cursor: 'pointer'}}>
           <p className="text-xs text-gray-400 uppercase
             tracking-widest mb-2">TOP MITRE TECHNIQUE</p>
           <p className="text-3xl font-bold font-mono"
             style={{color: '#60a5fa'}}>
             {topMitreName}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Most frequent across cases
+          <p className="text-xs mt-1" style={{color: '#60a5fa'}}>
+            {showMitreInfo ? '▲ Hide' : '▼ What is this?'}
           </p>
+          {showMitreInfo && (
+            <div style={{
+              fontSize: '11px',
+              color: '#94a3b8',
+              marginTop: '8px',
+              padding: '8px',
+              background: '#0d1526',
+              borderRadius: '6px',
+              lineHeight: '1.5'
+            }}>
+              {mitreInfo}
+            </div>
+          )}
         </div>
       </div>
 
