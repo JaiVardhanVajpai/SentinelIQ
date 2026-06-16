@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -27,6 +27,8 @@ import requests
 import os
 from dotenv import load_dotenv
 import time
+import csv
+import io
 from fastapi.responses import FileResponse
 from pdf_generator import generate_pdf
 
@@ -669,6 +671,89 @@ async def threat_hunt(
                 "ip_intel":            ip_intel,
                 "related_iocs":        related_iocs
             }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────
+# Day 16: Bulk investigation — CSV indicator upload
+# ─────────────────────────────────────────
+@app.post("/bulk-investigate")
+async def bulk_investigate(
+    file: UploadFile = File(...),
+    db=Depends(get_db)
+):
+    try:
+        contents = await file.read()
+        decoded = contents.decode("utf-8")
+        reader = csv.DictReader(io.StringIO(decoded))
+
+        results = []
+        for row in reader:
+            indicator = (
+                row.get("ip") or
+                row.get("url") or
+                row.get("indicator") or ""
+            ).strip()
+
+            if not indicator:
+                continue
+
+            existing = await db.find(
+                {"$or": [
+                    {"input_value": {"$regex": indicator, "$options": "i"}},
+                    {"target": {"$regex": indicator, "$options": "i"}}
+                ]},
+                {"_id": 0, "investigation_id": 1,
+                 "risk_score": 1, "verdict": 1,
+                 "timestamp": 1, "full_report.mitre_mapping": 1}
+            ).sort("timestamp", -1).to_list(length=5)
+
+            if existing:
+                best = existing[0]
+                mitre_list = best.get("full_report", {}).get("mitre_mapping", [])
+                results.append({
+                    "indicator": indicator,
+                    "status": "found",
+                    "risk_score": best.get("risk_score", 0),
+                    "verdict": best.get("verdict", "UNKNOWN"),
+                    "times_seen": len(existing),
+                    "last_seen": best.get("timestamp"),
+                    "investigation_id": best.get("investigation_id"),
+                    "mitre": [
+                        m.get("technique_id", "")
+                        for m in mitre_list
+                    ][:3]
+                })
+            else:
+                results.append({
+                    "indicator": indicator,
+                    "status": "not_found",
+                    "risk_score": None,
+                    "verdict": "NO DATA",
+                    "times_seen": 0,
+                    "last_seen": None,
+                    "investigation_id": None,
+                    "mitre": []
+                })
+
+        total = len(results)
+        flagged = [r for r in results if r.get("risk_score") and r["risk_score"] >= 70]
+        clean = [r for r in results if r.get("risk_score") is not None and r["risk_score"] < 30]
+        no_data = [r for r in results if r["status"] == "not_found"]
+
+        return {
+            "total_processed": total,
+            "summary": {
+                "flagged_high_risk": len(flagged),
+                "clean": len(clean),
+                "no_data": len(no_data),
+                "needs_investigation": len(no_data)
+            },
+            "results": results,
+            "flagged": flagged
         }
 
     except Exception as e:
