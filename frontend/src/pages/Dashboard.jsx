@@ -86,7 +86,7 @@ function Dashboard() {
       }
     };
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -127,7 +127,6 @@ function Dashboard() {
   ].filter((d) => d.value > 0);
 
   const barData = items
-    .filter(inv => (inv.risk_score || 0) > 0)
     .slice(0, 7)
     .map(inv => ({
       name: (inv.target || inv.input_value || '').slice(0, 10),
@@ -192,7 +191,7 @@ function Dashboard() {
           marginLeft: '12px',
           verticalAlign: 'middle'
         }}>
-          ● Live · refreshes every 30s
+          ● Live · auto-updates
         </span>
       </h1>
 
@@ -346,7 +345,7 @@ function Dashboard() {
                 labelStyle={{ color: '#94a3b8' }}
                 itemStyle={{ color: '#f1f5f9' }}
               />
-              <Bar dataKey="risk" name="Risk Score" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="risk" name="Risk Score" minPointSize={4} radius={[4, 4, 0, 0]}>
                 {barData.map((entry, index) => (
                   <Cell key={index} fill={getRiskBarColor(entry.risk)} />
                 ))}
