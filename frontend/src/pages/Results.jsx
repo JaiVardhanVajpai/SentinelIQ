@@ -451,6 +451,7 @@ function Results() {
               <div
                 key={i}
                 className="rounded-xl border border-gray-800 bg-gray-900/60 p-4 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-200"
+                style={{ overflow: 'hidden' }}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-mono text-blue-400 font-bold">
@@ -462,7 +463,7 @@ function Results() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-white font-medium">{m.name}</p>
+                <p className="text-sm text-white font-medium" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</p>
                 {m.tactic && (
                   <p className="text-xs text-gray-500 mt-1">{m.tactic}</p>
                 )}
@@ -527,9 +528,13 @@ function Results() {
                                 {mit.name}
                               </span>
                               <p style={{
-                                fontSize: '10px',
+                                fontSize: '12px',
                                 color: '#64748b',
-                                margin: '1px 0 0 0'
+                                margin: '1px 0 0 0',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
                               }}>
                                 {mit.description}
                               </p>
@@ -687,11 +692,11 @@ function Results() {
       {/* AI Explanation */}
       {ai.explanation && (
         <Card title="AI Explanation (RAG-Grounded)">
-          <div className="flex flex-wrap gap-2 mb-4 text-xs">
-            <span className="px-2 py-1 rounded bg-gray-800 font-mono text-gray-300">
+          <div className="flex flex-wrap gap-2 mb-4 text-xs" style={{ padding: '16px' }}>
+            <span className="px-2 py-1 rounded bg-gray-800 font-mono text-gray-300" style={{ marginBottom: '8px' }}>
               {ai.ai_model}
             </span>
-            <span className="px-2 py-1 rounded bg-gray-800 font-mono text-gray-300">
+            <span className="px-2 py-1 rounded bg-gray-800 font-mono text-gray-300" style={{ marginBottom: '8px' }}>
               Primary: {ai.primary_mitre}
             </span>
             <span
@@ -700,6 +705,7 @@ function Results() {
                   ? 'bg-green-500/15 text-green-400'
                   : 'bg-amber-500/15 text-amber-400'
               }`}
+              style={{ marginBottom: '8px' }}
             >
               {ai.grounded ? 'GROUNDED' : 'UNGROUNDED'}
             </span>
