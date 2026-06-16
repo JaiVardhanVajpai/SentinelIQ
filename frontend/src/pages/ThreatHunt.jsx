@@ -6,6 +6,7 @@ function ThreatHunt() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState('');
+  const [expandedMitre, setExpandedMitre] = useState(null);
 
   const hunt = async () => {
     if (!indicator.trim()) return;
@@ -22,6 +23,29 @@ function ThreatHunt() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const mitreDescriptions = {
+    'T1090': 'Proxy — Attacker routes traffic through intermediary systems like Tor or VPNs to hide their real location and evade detection.',
+    'T1566': 'Phishing — Attacker sends deceptive emails or messages to trick users into revealing credentials or downloading malware.',
+    'T1110': 'Brute Force — Attacker systematically tries many passwords to gain unauthorized access to accounts.',
+    'T1078': 'Valid Accounts — Attacker uses stolen legitimate credentials to access systems without triggering alerts.',
+    'T1059': 'Command & Scripting — Attacker runs malicious scripts to execute commands on compromised systems.',
+    'T1055': 'Process Injection — Attacker injects malicious code into legitimate running processes to evade detection.',
+    'T1036': 'Masquerading — Attacker disguises malicious activity as legitimate software or processes.',
+    'T1083': 'File Discovery — Attacker enumerates files and directories to find sensitive information.',
+    'T1082': 'System Information Discovery — Attacker gathers details about the target system and environment.',
+    'T1071': 'Application Layer Protocol — Attacker uses standard protocols like HTTP/DNS to blend C2 traffic with normal traffic.',
+    'T1105': 'Ingress Tool Transfer — Attacker downloads additional tools or malware onto the compromised system.',
+    'T1027': 'Obfuscated Files — Attacker encodes or encrypts malicious content to evade security tools.',
+    'T1140': 'Deobfuscate/Decode — Attacker decodes or decrypts files or information to execute malicious content.',
+    'T1574': 'Hijack Execution Flow — Attacker hijacks the way programs execute to run malicious code.',
+    'T1003': 'OS Credential Dumping — Attacker extracts credentials from operating system memory or files.',
+    'T1018': 'Remote System Discovery — Attacker identifies other systems on the network to expand access.',
+    'T1021': 'Remote Services — Attacker uses legitimate remote access tools like RDP or SSH to move laterally.',
+    'T1048': 'Exfiltration Over Alternative Protocol — Attacker steals data using uncommon protocols to avoid detection.',
+    'T1041': 'Exfiltration Over C2 Channel — Attacker sends stolen data back through the same channel used for control.',
+    'T1486': 'Data Encrypted for Impact — Attacker encrypts victim data to cause disruption (ransomware).',
   };
 
   return (
@@ -224,25 +248,54 @@ function ThreatHunt() {
                 }}>
                   Top MITRE Techniques
                 </p>
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '8px'
-                }}>
-                  {results.summary.top_mitre_techniques
-                    .map((t, i) => (
-                      <span key={i} style={{
-                        fontSize: '12px',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        fontWeight: '500',
-                        background: 'rgba(59,130,246,0.1)',
-                        color: '#60a5fa',
-                        border: '1px solid rgba(59,130,246,0.2)'
-                      }}>
-                        {t.technique} ({t.count}x)
-                      </span>
-                    ))}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {results.summary.top_mitre_techniques.map((t, i) => {
+                    const techId = t.technique.split(' ')[0];
+                    const desc = mitreDescriptions[techId] ||
+                      `${t.technique} — A detected attack technique. Click to see count.`;
+                    const isOpen = expandedMitre === i;
+                    return (
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span
+                          onClick={() => setExpandedMitre(isOpen ? null : i)}
+                          style={{
+                            fontSize: '12px',
+                            padding: '5px 14px',
+                            borderRadius: '20px',
+                            fontWeight: '500',
+                            background: 'rgba(59,130,246,0.1)',
+                            color: '#60a5fa',
+                            border: '1px solid rgba(59,130,246,0.2)',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          {t.technique}
+                          <span style={{ color: '#ef4444', marginLeft: '6px', fontWeight: '700' }}>
+                            ×{t.count}
+                          </span>
+                          <span style={{ marginLeft: '6px', fontSize: '10px' }}>
+                            {isOpen ? '▲' : '▼'}
+                          </span>
+                        </span>
+                        {isOpen && (
+                          <div style={{
+                            marginTop: '6px',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            background: '#0d1526',
+                            border: '1px solid #1e293b',
+                            fontSize: '12px',
+                            color: '#94a3b8',
+                            lineHeight: '1.6',
+                            maxWidth: '300px'
+                          }}>
+                            {desc}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
