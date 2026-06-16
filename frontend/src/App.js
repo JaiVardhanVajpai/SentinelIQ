@@ -17,16 +17,25 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-950 text-white">
+      <div
+        className="bg-gray-950 text-white"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh'
+        }}
+      >
         <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/results" element={<Results />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/hunt" element={<ThreatHunt />} />
-          <Route path="/bulk" element={<BulkUpload />} />
-        </Routes>
+        <main style={{ flex: 1 }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/results" element={<Results />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/hunt" element={<ThreatHunt />} />
+            <Route path="/bulk" element={<BulkUpload />} />
+          </Routes>
+        </main>
         <Footer />
       </div>
     </Router>
