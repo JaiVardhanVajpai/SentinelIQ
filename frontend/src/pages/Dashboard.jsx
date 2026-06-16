@@ -123,10 +123,13 @@ function Dashboard() {
     { name: 'Clean', value: clean, key: 'CLEAN' },
   ].filter((d) => d.value > 0);
 
-  const barData = items.slice(0, 7).map(inv => ({
-    name: (inv.target || inv.input_value || '').slice(0, 10),
-    risk: typeof inv.risk_score === 'number' ? inv.risk_score : 0
-  }));
+  const barData = items
+    .filter(inv => (inv.risk_score || 0) > 0)
+    .slice(0, 7)
+    .map(inv => ({
+      name: (inv.target || inv.input_value || '').slice(0, 10),
+      risk: typeof inv.risk_score === 'number' ? inv.risk_score : 0
+    }));
 
   const displayedInvestigations = verdictFilter
     ? items.filter(i => i.verdict === verdictFilter.toUpperCase())
