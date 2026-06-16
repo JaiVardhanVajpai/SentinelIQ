@@ -139,6 +139,18 @@ function Dashboard() {
     return '#10b981';
   };
 
+  // Most common MITRE technique across all investigations
+  const mitreCount = {};
+  items.forEach((inv) => {
+    const techniques = inv.mitre_mapping || inv.full_report?.mitre_mapping || [];
+    techniques.forEach((t) => {
+      const key = t.technique_id || t.id || '';
+      if (key) mitreCount[key] = (mitreCount[key] || 0) + 1;
+    });
+  });
+  const topMitre = Object.entries(mitreCount).sort((a, b) => b[1] - a[1])[0];
+  const topMitreName = topMitre ? topMitre[0] : 'N/A';
+
   if (total === 0) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-20 text-center">
@@ -192,11 +204,24 @@ function Dashboard() {
           <p className="text-xs text-gray-400 uppercase
             tracking-widest mb-2">PENDING REVIEW</p>
           <p className="text-3xl font-bold"
-            style={{color: '#f59e0b'}}>
+            style={{color: pending > 10 ? '#ef4444' : pending > 0 ? '#f59e0b' : '#10b981'}}>
             {pending}
           </p>
           <p className="text-xs text-gray-500 mt-1">
             Awaiting decision
+          </p>
+        </div>
+
+        <div className="bg-gray-800 rounded-xl p-4
+          border border-gray-700">
+          <p className="text-xs text-gray-400 uppercase
+            tracking-widest mb-2">TOP MITRE TECHNIQUE</p>
+          <p className="text-3xl font-bold font-mono"
+            style={{color: '#60a5fa'}}>
+            {topMitreName}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Most frequent across cases
           </p>
         </div>
       </div>
@@ -312,8 +337,15 @@ function Dashboard() {
                       {theme.label}
                     </span>
                   </td>
-                  <td className={`px-6 py-3 text-right font-mono font-bold ${theme.text}`}>
-                    {i.risk_score}
+                  <td className="px-6 py-3 text-right font-mono">
+                    <span
+                      style={{
+                        color: i.risk_score >= 70 ? '#ef4444' : i.risk_score >= 30 ? '#f59e0b' : '#10b981',
+                        fontWeight: '700'
+                      }}
+                    >
+                      {i.risk_score}
+                    </span>
                   </td>
                 </tr>
               );
