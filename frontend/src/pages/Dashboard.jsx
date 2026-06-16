@@ -49,6 +49,7 @@ function Dashboard() {
   const [rejected, setRejected] = useState(0);
   const [pending, setPending] = useState(0);
   const [showMitreInfo, setShowMitreInfo] = useState(false);
+  const [verdictFilter, setVerdictFilter] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -122,15 +123,16 @@ function Dashboard() {
     { name: 'Clean', value: clean, key: 'CLEAN' },
   ].filter((d) => d.value > 0);
 
-  const barData = [...items]
-    .sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))
-    .slice(-7)
-    .map((i) => ({
-      name: String(i.input_value).slice(0, 12),
-      risk: Number(i.risk_score) || 0,
-    }));
+  const barData = items.slice(0, 7).map(inv => ({
+    name: (inv.target || inv.input_value || '').slice(0, 10),
+    risk: typeof inv.risk_score === 'number' ? inv.risk_score : 0
+  }));
 
-  const recent = [...items]
+  const displayedInvestigations = verdictFilter
+    ? items.filter(i => i.verdict === verdictFilter.toUpperCase())
+    : items;
+
+  const recent = [...displayedInvestigations]
     .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))
     .slice(0, 6);
 
@@ -271,6 +273,12 @@ function Dashboard() {
                 innerRadius={50}
                 paddingAngle={3}
                 label
+                style={{ cursor: 'pointer' }}
+                onClick={(data) => {
+                  setVerdictFilter(
+                    verdictFilter === data.name ? null : data.name
+                  );
+                }}
               >
                 {pieData.map((d) => (
                   <Cell key={d.key} fill={COLORS[d.key]} />
@@ -332,6 +340,22 @@ function Dashboard() {
       </div>
 
       {/* Recent table */}
+      {verdictFilter && (
+        <div style={{
+          fontSize: '12px',
+          color: '#60a5fa',
+          marginBottom: '8px'
+        }}>
+          Showing: {verdictFilter} only —
+          <span
+            onClick={() => setVerdictFilter(null)}
+            style={{cursor:'pointer', marginLeft:'6px',
+                    color:'#94a3b8'}}
+          >
+            Clear filter ✕
+          </span>
+        </div>
+      )}
       <div className="rounded-xl border border-gray-800 bg-gray-900/60 overflow-hidden">
         <h3 className="text-xs uppercase tracking-widest text-gray-500 px-6 pt-5 pb-3">
           Recent Investigations
