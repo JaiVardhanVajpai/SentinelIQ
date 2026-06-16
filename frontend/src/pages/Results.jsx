@@ -1031,6 +1031,12 @@ function Results() {
               }}>
                 High-risk alert — automated response triggered
               </p>
+              <p style={{ fontSize: '11px', color: '#475569', marginTop: '4px' }}>
+                SOAR (Security Orchestration, Automation & Response)
+                simulates what enterprise security tools do automatically
+                when a critical threat is confirmed — assign playbooks,
+                trigger containment actions, and create incident tickets.
+              </p>
             </div>
             {!soarData && (
               <button
@@ -1092,6 +1098,10 @@ function Results() {
                   marginBottom: '8px'
                 }}>
                   Recommended Playbooks
+                </p>
+                <p style={{ fontSize: '11px', color: '#475569', marginBottom: '8px' }}>
+                  Based on detected MITRE techniques — these are the
+                  standard response procedures a SOC team would follow:
                 </p>
                 {soarData.recommended_playbooks.map(
                   (p, i) => (
