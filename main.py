@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -514,6 +514,161 @@ async def get_all_investigations():
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+# ─────────────────────────────────────────
+# Day 15: Threat hunting — search past investigations
+# ─────────────────────────────────────────
+@app.get("/hunt")
+async def threat_hunt(
+    indicator: str,
+    type: str = "all",           # "ip", "url", "domain", "hash", "all"
+    days: int = 0,               # 0 = all time, 7 = last 7 days, etc.
+    db=Depends(get_db)
+):
+    try:
+        # --- Date filter ---
+        query_filter = {
+            "$or": [
+                {"input_value":  {"$regex": indicator, "$options": "i"}},
+                {"target":       {"$regex": indicator, "$options": "i"}},
+                {"full_report.threat_intel.ip":  {"$regex": indicator, "$options": "i"}},
+                {"full_report.threat_intel.url": {"$regex": indicator, "$options": "i"}}
+            ]
+        }
+        if days > 0:
+            from datetime import datetime, timedelta
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            query_filter["timestamp"] = {"$gte": cutoff.isoformat()}
+
+        results = await db.find(
+            query_filter, {"_id": 0}
+        ).sort("timestamp", -1).to_list(length=100)
+
+        if not results:
+            return {
+                "indicator": indicator,
+                "total_found": 0,
+                "results": [],
+                "summary": {
+                    "avg_risk_score": 0,
+                    "max_risk_score": 0,
+                    "verdicts": {},
+                    "top_mitre_techniques": [],
+                    "first_seen": None,
+                    "last_seen": None,
+                    "geo_distribution": {},
+                    "ip_intel": {}
+                }
+            }
+
+        # --- Risk scores ---
+        risk_scores = [r.get("risk_score", 0) for r in results]
+
+        # --- Verdicts ---
+        verdicts = {}
+        for r in results:
+            v = r.get("verdict", "UNKNOWN")
+            verdicts[v] = verdicts.get(v, 0) + 1
+
+        # --- MITRE aggregation ---
+        mitre_counts = {}
+        for r in results:
+            mitre_list = r.get("full_report", {}).get("mitre_mapping", []) \
+                         or r.get("mitre_mapping", [])
+            for t in mitre_list:
+                tid   = t.get("technique_id", "")
+                tname = t.get("technique_name", "") or t.get("name", "")
+                if tid:
+                    key = f"{tid} - {tname}"
+                    mitre_counts[key] = mitre_counts.get(key, 0) + 1
+
+        top_mitre = sorted(
+            [{"technique": k, "count": v} for k, v in mitre_counts.items()],
+            key=lambda x: x["count"], reverse=True
+        )[:5]
+
+        # --- First / Last seen ---
+        timestamps = [r.get("timestamp") for r in results if r.get("timestamp")]
+        first_seen = min(timestamps) if timestamps else None
+        last_seen  = max(timestamps) if timestamps else None
+
+        # --- Activity by day (last 30 days) ---
+        from collections import defaultdict
+        daily_hits = defaultdict(int)
+        for r in results:
+            ts = r.get("timestamp", "")
+            if ts:
+                day = ts[:10]   # "2026-06-16"
+                daily_hits[day] += 1
+
+        # --- Geo distribution (from threat_intel if stored) ---
+        geo_counts = defaultdict(int)
+        for r in results:
+            country = (
+                r.get("threat_intel", {}).get("country")
+                or r.get("full_report", {}).get("threat_intel", {}).get("country")
+                or r.get("full_report", {}).get("geo", {}).get("country")
+            )
+            if country:
+                geo_counts[country] += 1
+
+        total = len(results)
+        geo_distribution = {
+            k: {"count": v, "pct": round(v / total * 100)}
+            for k, v in sorted(geo_counts.items(),
+                                key=lambda x: x[1], reverse=True)
+        }
+
+        # --- IP Intel (if stored) ---
+        ip_intel = {}
+        for r in results:
+            ti = r.get("threat_intel", {}) or r.get("full_report", {}).get("threat_intel", {})
+            if ti:
+                ip_intel = {
+                    "org":     ti.get("org") or ti.get("isp", ""),
+                    "country": ti.get("country", ""),
+                    "asn":     ti.get("asn", ""),
+                    "type":    ti.get("type") or ti.get("usage_type", ""),
+                    "is_tor": ti.get("is_tor") or "tor" in (ti.get("isp","") + ti.get("org","")).lower(),
+                    "is_vpn":  ti.get("is_vpn", False),
+                    "is_proxy":ti.get("is_proxy", False),
+                    "abuse_score": ti.get("abuse_score") or ti.get("abuse_confidence_score", 0),
+                }
+                break
+
+        # --- Related IOCs ---
+        related_iocs = []
+        # CIDR /24 of the indicator if it's an IP
+        import re
+        ip_match = re.match(r'^(\d+\.\d+\.\d+)\.\d+$', indicator)
+        if ip_match:
+            related_iocs.append({
+                "indicator": f"{ip_match.group(1)}.0/24",
+                "type": "CIDR",
+                "note": "Same /24 subnet"
+            })
+
+        return {
+            "indicator":   indicator,
+            "total_found": len(results),
+            "results":     results,
+            "summary": {
+                "avg_risk_score":      round(sum(risk_scores) / len(risk_scores)),
+                "max_risk_score":      max(risk_scores),
+                "verdicts":            verdicts,
+                "top_mitre_techniques": top_mitre,
+                "first_seen":          first_seen,
+                "last_seen":           last_seen,
+                "daily_hits":          dict(daily_hits),
+                "geo_distribution":    geo_distribution,
+                "ip_intel":            ip_intel,
+                "related_iocs":        related_iocs
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/investigations/{investigation_id}")

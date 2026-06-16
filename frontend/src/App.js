@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Results from './pages/Results';
 import History from './pages/History';
 import Dashboard from './pages/Dashboard';
+import ThreatHunt from './pages/ThreatHunt';
 import Footer from './components/Footer';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/results" element={<Results />} />
           <Route path="/history" element={<History />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/hunt" element={<ThreatHunt />} />
         </Routes>
         <Footer />
       </div>

@@ -5,6 +5,7 @@ const links = [
   { to: '/', label: 'Investigate', end: true },
   { to: '/history', label: 'History', end: false },
   { to: '/dashboard', label: 'Dashboard', end: false },
+  { to: '/hunt', label: 'Hunt', end: false },
 ];
 
 function Navbar() {
