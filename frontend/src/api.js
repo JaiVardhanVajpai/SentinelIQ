@@ -12,3 +12,12 @@ const api = axios.create({
 });
 
 export default api;
+
+export const keepAlive = () => {
+  const url = process.env.REACT_APP_API_URL ||
+              'https://sentineliq-d0ot.onrender.com';
+  setInterval(() => {
+    fetch(`${url}/`)
+      .catch(() => {});
+  }, 10 * 60 * 1000);
+};

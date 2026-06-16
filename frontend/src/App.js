@@ -7,8 +7,13 @@ import History from './pages/History';
 import Dashboard from './pages/Dashboard';
 import ThreatHunt from './pages/ThreatHunt';
 import Footer from './components/Footer';
+import { keepAlive } from './api';
 
 function App() {
+  React.useEffect(() => {
+    keepAlive();
+  }, []);
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-950 text-white">
