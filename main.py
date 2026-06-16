@@ -227,6 +227,8 @@ def analyze_url(url: str):
 @app.get("/analyze-ip")
 def analyze_ip(ip: str):
 
+    ip = ip.strip().replace(" ", "")
+
     if not ip or ip.strip() == "":
         raise HTTPException(
             status_code=400,
@@ -527,6 +529,8 @@ async def threat_hunt(
     db=Depends(get_db)
 ):
     try:
+        indicator = indicator.strip().replace(" ", "")
+
         # --- Date filter ---
         query_filter = {
             "$or": [
