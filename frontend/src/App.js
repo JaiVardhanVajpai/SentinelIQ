@@ -6,6 +6,7 @@ import Results from './pages/Results';
 import History from './pages/History';
 import Dashboard from './pages/Dashboard';
 import ThreatHunt from './pages/ThreatHunt';
+import BulkUpload from './pages/BulkUpload';
 import Footer from './components/Footer';
 import { keepAlive } from './api';
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/history" element={<History />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/hunt" element={<ThreatHunt />} />
+          <Route path="/bulk" element={<BulkUpload />} />
         </Routes>
         <Footer />
       </div>

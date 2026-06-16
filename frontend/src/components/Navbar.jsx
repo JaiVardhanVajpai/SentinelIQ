@@ -6,6 +6,7 @@ const links = [
   { to: '/history', label: 'History', end: false },
   { to: '/dashboard', label: 'Dashboard', end: false },
   { to: '/hunt', label: 'Hunt', end: false },
+  { to: '/bulk', label: 'Bulk Upload', end: false },
 ];
 
 function Navbar() {
