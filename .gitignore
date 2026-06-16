@@ -8,3 +8,5 @@ test_report.pdf
 _cdb_test/
 uvicorn_*.log
 cra_start.log
+_t*.json
+_login_body.json
