@@ -678,6 +678,77 @@ async def threat_hunt(
 
 
 # ─────────────────────────────────────────
+# Day 17: SOAR alert — auto-trigger playbooks for high-risk cases
+# ─────────────────────────────────────────
+@app.get("/soar-alert/{investigation_id}")
+async def soar_alert(investigation_id: str, db=Depends(get_db)):
+    try:
+        inv = await db.find_one(
+            {"investigation_id": investigation_id},
+            {"_id": 0}
+        )
+        if not inv:
+            raise HTTPException(status_code=404,
+                detail="Investigation not found")
+
+        risk = inv.get("risk_score", 0)
+        if risk < 75:
+            return {
+                "soar_triggered": False,
+                "reason": f"Risk score {risk} is below threshold (75)"
+            }
+
+        mitre = []
+        for t in (inv.get("mitre_mapping") or
+                  inv.get("full_report", {}).get("mitre_mapping", [])):
+            mitre.append(t.get("technique_id", ""))
+
+        playbooks = {
+            "T1090": "PLAYBOOK-003: Tor/Proxy Investigation — Block IP, check for lateral movement, review firewall logs",
+            "T1566": "PLAYBOOK-001: Phishing Response — Quarantine email, reset credentials, scan endpoints",
+            "T1110": "PLAYBOOK-002: Brute Force Response — Lock account, enable MFA, review auth logs",
+            "T1078": "PLAYBOOK-004: Compromised Account — Force password reset, revoke sessions, audit access",
+        }
+
+        recommended = []
+        for tid in mitre:
+            if tid in playbooks:
+                recommended.append(playbooks[tid])
+        if not recommended:
+            recommended.append("PLAYBOOK-000: Generic High-Risk — Isolate, investigate, escalate to Tier 2")
+
+        return {
+            "soar_triggered": True,
+            "alert_id": f"SOAR-{investigation_id}",
+            "severity": "CRITICAL" if risk >= 90 else "HIGH",
+            "risk_score": risk,
+            "indicator": inv.get("target") or inv.get("input_value"),
+            "verdict": inv.get("verdict"),
+            "mitre_techniques": mitre,
+            "recommended_playbooks": recommended,
+            "action_items": [
+                "Immediately isolate affected endpoint",
+                "Preserve forensic evidence — do not reboot",
+                "Notify incident response team",
+                "Begin containment per playbook",
+                "Document all actions taken"
+            ],
+            "auto_actions": [
+                f"IP {inv.get('target') or inv.get('input_value', 'unknown')} added to block list",
+                "Alert sent to SOC team channel",
+                "Ticket created in incident tracker"
+            ],
+            "timestamp": inv.get("timestamp"),
+            "investigation_id": investigation_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────
 # Day 16: Bulk investigation — CSV indicator upload
 # ─────────────────────────────────────────
 @app.post("/bulk-investigate")

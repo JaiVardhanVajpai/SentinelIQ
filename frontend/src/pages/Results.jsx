@@ -103,6 +103,8 @@ function Results() {
   const [decisionError, setDecisionError] = useState("");
   const [decisionSuccess, setDecisionSuccess] = useState("");
   const [expandedMitigation, setExpandedMitigation] = useState(null);
+  const [soarData, setSoarData] = useState(null);
+  const [soarLoading, setSoarLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -188,6 +190,21 @@ function Results() {
       `${BASE_URL}/investigations/${data.investigation_id}/report`,
       '_blank'
     );
+  };
+
+  const fetchSoar = async () => {
+    if (!data?.investigation_id) return;
+    setSoarLoading(true);
+    try {
+      const res = await api.get(
+        `/soar-alert/${data.investigation_id}`
+      );
+      setSoarData(res.data);
+    } catch (e) {
+      setSoarData(null);
+    } finally {
+      setSoarLoading(false);
+    }
   };
 
   const parseMarkdown = (text) => {
@@ -984,6 +1001,170 @@ function Results() {
           </div>
         )}
       </div>
+
+      {data.risk_score >= 75 && (
+        <div style={{
+          marginTop: '16px',
+          padding: '20px',
+          borderRadius: '12px',
+          background: '#0d1526',
+          border: '1px solid #7f1d1d'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '14px'
+          }}>
+            <div>
+              <p style={{
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#f87171',
+                marginBottom: '2px'
+              }}>
+                SOAR SIMULATION
+              </p>
+              <p style={{
+                fontSize: '11px',
+                color: '#64748b'
+              }}>
+                High-risk alert — automated response triggered
+              </p>
+            </div>
+            {!soarData && (
+              <button
+                onClick={fetchSoar}
+                disabled={soarLoading}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  background: soarLoading
+                    ? '#1e293b' : 'rgba(239,68,68,0.1)',
+                  border: '1px solid #7f1d1d',
+                  color: '#f87171',
+                  fontSize: '12px',
+                  cursor: soarLoading
+                    ? 'not-allowed' : 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                {soarLoading
+                  ? 'Generating...' : 'Generate SOAR Alert'}
+              </button>
+            )}
+          </div>
+
+          {soarData && soarData.soar_triggered && (
+            <div>
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '14px'
+              }}>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  background: 'rgba(239,68,68,0.15)',
+                  color: '#f87171'
+                }}>
+                  {soarData.severity}
+                </span>
+                <span style={{
+                  fontSize: '11px',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  background: 'rgba(59,130,246,0.1)',
+                  color: '#60a5fa'
+                }}>
+                  {soarData.alert_id}
+                </span>
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <p style={{
+                  fontSize: '11px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '.05em',
+                  marginBottom: '8px'
+                }}>
+                  Recommended Playbooks
+                </p>
+                {soarData.recommended_playbooks.map(
+                  (p, i) => (
+                    <div key={i} style={{
+                      fontSize: '12px',
+                      color: '#fbbf24',
+                      padding: '6px 10px',
+                      background: 'rgba(245,158,11,0.08)',
+                      borderRadius: '6px',
+                      marginBottom: '4px',
+                      borderLeft: '3px solid #f59e0b'
+                    }}>
+                      {p}
+                    </div>
+                  )
+                )}
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <p style={{
+                  fontSize: '11px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '.05em',
+                  marginBottom: '8px'
+                }}>
+                  Action Items
+                </p>
+                {soarData.action_items.map((a, i) => (
+                  <div key={i} style={{
+                    fontSize: '12px',
+                    color: '#e2e8f0',
+                    padding: '4px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span style={{ color: '#ef4444' }}>
+                      →
+                    </span>
+                    {a}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p style={{
+                  fontSize: '11px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '.05em',
+                  marginBottom: '8px'
+                }}>
+                  Auto Actions Triggered
+                </p>
+                {soarData.auto_actions.map((a, i) => (
+                  <div key={i} style={{
+                    fontSize: '12px',
+                    color: '#4ade80',
+                    padding: '4px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span>✓</span>
+                    {a}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="mt-8 flex flex-col sm:flex-row gap-3">
