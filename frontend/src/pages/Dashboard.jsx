@@ -52,7 +52,7 @@ function Dashboard() {
   const [verdictFilter, setVerdictFilter] = useState(null);
 
   useEffect(() => {
-    (async () => {
+    const fetchData = async () => {
       try {
         const res = await api.get('/investigations');
         const invs = res.data?.investigations || [];
@@ -84,7 +84,10 @@ function Dashboard() {
       } finally {
         setLoading(false);
       }
-    })();
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -180,7 +183,18 @@ function Dashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold mb-8">SOC Operations Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-8">
+        SOC Operations Dashboard
+        <span style={{
+          fontSize: '12px',
+          fontWeight: '400',
+          color: '#10b981',
+          marginLeft: '12px',
+          verticalAlign: 'middle'
+        }}>
+          ● Live · refreshes every 30s
+        </span>
+      </h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
