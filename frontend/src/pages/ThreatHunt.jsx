@@ -206,7 +206,8 @@ function ThreatHunt() {
               </div>
             </div>
 
-            {results.summary.top_mitre_techniques.length > 0 && (
+            {results.summary.top_mitre_techniques.length > 0 &&
+             results.summary.avg_risk_score > 0 && (
               <div style={{
                 padding: '16px',
                 borderRadius: '12px',
