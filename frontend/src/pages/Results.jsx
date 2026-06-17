@@ -1010,55 +1010,53 @@ function Results() {
           background: '#0d1526',
           border: '1px solid #7f1d1d'
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '14px'
-          }}>
-            <div>
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '16px',
+              marginBottom: '8px'
+            }}>
               <p style={{
                 fontSize: '13px',
                 fontWeight: '600',
-                color: '#f87171',
-                marginBottom: '2px'
+                color: '#f87171'
               }}>
                 SOAR SIMULATION
               </p>
-              <p style={{
-                fontSize: '11px',
-                color: '#64748b'
-              }}>
-                High-risk alert — automated response triggered
-              </p>
-              <p style={{ fontSize: '11px', color: '#475569', marginTop: '4px' }}>
-                SOAR (Security Orchestration, Automation & Response)
-                simulates what enterprise security tools do automatically
-                when a critical threat is confirmed — assign playbooks,
-                trigger containment actions, and create incident tickets.
-              </p>
+              {!soarData && (
+                <button
+                  onClick={fetchSoar}
+                  disabled={soarLoading}
+                  style={{
+                    flexShrink: 0,
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    background: soarLoading
+                      ? '#1e293b' : 'rgba(239,68,68,0.1)',
+                    border: '1px solid #7f1d1d',
+                    color: '#f87171',
+                    fontSize: '12px',
+                    cursor: soarLoading
+                      ? 'not-allowed' : 'pointer',
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {soarLoading ? 'Generating...' : 'Generate SOAR Alert'}
+                </button>
+              )}
             </div>
-            {!soarData && (
-              <button
-                onClick={fetchSoar}
-                disabled={soarLoading}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  background: soarLoading
-                    ? '#1e293b' : 'rgba(239,68,68,0.1)',
-                  border: '1px solid #7f1d1d',
-                  color: '#f87171',
-                  fontSize: '12px',
-                  cursor: soarLoading
-                    ? 'not-allowed' : 'pointer',
-                  fontWeight: '500'
-                }}
-              >
-                {soarLoading
-                  ? 'Generating...' : 'Generate SOAR Alert'}
-              </button>
-            )}
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+              High-risk alert — automated response triggered
+            </p>
+            <p style={{ fontSize: '12px', color: '#475569', lineHeight: '1.6' }}>
+              SOAR (Security Orchestration, Automation & Response)
+              simulates what enterprise security tools do automatically
+              when a critical threat is confirmed — assign playbooks,
+              trigger containment actions, and create incident tickets.
+            </p>
           </div>
 
           {soarData && soarData.soar_triggered && (
