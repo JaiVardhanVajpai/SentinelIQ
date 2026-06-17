@@ -129,7 +129,7 @@ function Results() {
           setDecision(res.data.analyst_decision);
         }
       } catch (err) {
-        console.log("No decision yet");
+        // No analyst decision recorded yet — leave decision unset
       }
     };
     loadDecision();

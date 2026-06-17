@@ -586,33 +586,34 @@ def investigate_login(events: list) -> dict:
     if isinstance(detection, dict):
         summary = detection.get("summary", {})
 
-    bf = summary.get("brute_force_detected", 0)
-    it = summary.get("impossible_travel_detected", 0)
-    cs = summary.get("credential_stuffing_detected", 0)
+    brute_force = summary.get("brute_force_detected", 0)
+    impossible_travel = summary.get("impossible_travel_detected", 0)
+    credential_stuffing = summary.get("credential_stuffing_detected", 0)
 
     detected_count = sum([
-        1 if bf else 0,
-        1 if it else 0,
-        1 if cs else 0
+        1 if brute_force else 0,
+        1 if impossible_travel else 0,
+        1 if credential_stuffing else 0
     ])
 
+    # Split the total risk equally across every detected threat type
     if total_risk > 0 and detected_count > 0:
         per_detection = total_risk / detected_count
-        if bf:
+        if brute_force:
             risk_breakdown.append({
                 "source": "Brute Force",
                 "contribution": round(per_detection),
                 "reason": "Multiple failed logins from same IP",
                 "weight": f"{round(100/detected_count)}%"
             })
-        if it:
+        if impossible_travel:
             risk_breakdown.append({
                 "source": "Impossible Travel",
                 "contribution": round(per_detection),
                 "reason": "Geographically impossible login sequence",
                 "weight": f"{round(100/detected_count)}%"
             })
-        if cs:
+        if credential_stuffing:
             risk_breakdown.append({
                 "source": "Credential Stuffing",
                 "contribution": round(per_detection),

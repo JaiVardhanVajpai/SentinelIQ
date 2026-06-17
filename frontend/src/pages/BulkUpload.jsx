@@ -23,9 +23,9 @@ function BulkUpload() {
   const fileRef = useRef();
 
   const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (f && f.name.endsWith('.csv')) {
-      setFile(f); setError(''); setResults(null);
+    const selectedFile = e.target.files[0];
+    if (selectedFile && selectedFile.name.endsWith('.csv')) {
+      setFile(selectedFile); setError(''); setResults(null);
     } else {
       setError('Please upload a valid .csv file');
     }
@@ -33,9 +33,9 @@ function BulkUpload() {
 
   const handleDrop = (e) => {
     e.preventDefault();
-    const f = e.dataTransfer.files[0];
-    if (f && f.name.endsWith('.csv')) {
-      setFile(f); setError(''); setResults(null);
+    const selectedFile = e.dataTransfer.files[0];
+    if (selectedFile && selectedFile.name.endsWith('.csv')) {
+      setFile(selectedFile); setError(''); setResults(null);
     } else {
       setError('Please upload a valid .csv file');
     }
@@ -84,7 +84,7 @@ function BulkUpload() {
     return true;
   }) ?? [];
 
-  const S = results?.summary;
+  const summary = results?.summary;
 
   return (
     <div style={{ minHeight:'100vh', background:'#0a0f1e', color:'#e2e8f0' }}>
@@ -185,9 +185,9 @@ function BulkUpload() {
             }}>
               {[
                 { label:'Total Processed', val:results.total_processed, color:'#60a5fa' },
-                { label:'High Risk', val:S.flagged_high_risk, color:'#ef4444' },
-                { label:'Clean', val:S.clean, color:'#10b981' },
-                { label:'Needs Investigation', val:S.needs_investigation, color:'#f59e0b' },
+                { label:'High Risk', val:summary.flagged_high_risk, color:'#ef4444' },
+                { label:'Clean', val:summary.clean, color:'#10b981' },
+                { label:'Needs Investigation', val:summary.needs_investigation, color:'#f59e0b' },
               ].map(({ label, val, color }) => (
                 <div key={label} style={{
                   padding:'16px', borderRadius:'12px',
@@ -207,9 +207,9 @@ function BulkUpload() {
             <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
               {[
                 { key:'all',     label:`All (${results.total_processed})` },
-                { key:'flagged', label:`High Risk (${S.flagged_high_risk})` },
-                { key:'clean',   label:`Clean (${S.clean})` },
-                { key:'nodata',  label:`No Data (${S.no_data})` },
+                { key:'flagged', label:`High Risk (${summary.flagged_high_risk})` },
+                { key:'clean',   label:`Clean (${summary.clean})` },
+                { key:'nodata',  label:`No Data (${summary.no_data})` },
               ].map(({ key, label }) => (
                 <button key={key} onClick={() => setFilter(key)} style={{
                   padding:'6px 14px', borderRadius:'8px', fontSize:'12px',

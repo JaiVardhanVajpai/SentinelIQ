@@ -60,10 +60,10 @@ function Dashboard() {
         const decisionsData = await Promise.all(
           invs.map(async (inv) => {
             try {
-              const d = await api.get(
+              const decisionRes = await api.get(
                 `/investigations/${inv.investigation_id}/decision`
               );
-              return d.data?.analyst_decision?.decision
+              return decisionRes.data?.analyst_decision?.decision
                 || null;
             } catch {
               return null;
@@ -71,11 +71,11 @@ function Dashboard() {
           })
         );
         const approvedCount = decisionsData
-          .filter(d => d === 'approve').length;
+          .filter(decision => decision === 'approve').length;
         const rejectedCount = decisionsData
-          .filter(d => d === 'reject').length;
+          .filter(decision => decision === 'reject').length;
         const pendingCount = decisionsData
-          .filter(d => d === null).length;
+          .filter(decision => decision === null).length;
         setApproved(approvedCount);
         setRejected(rejectedCount);
         setPending(pendingCount);
