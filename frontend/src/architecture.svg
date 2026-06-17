@@ -1,243 +1,183 @@
-<svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg"
-     font-family="system-ui, sans-serif">
+<svg viewBox="0 0 960 620" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,-apple-system,sans-serif">
 
   <!-- Background -->
-  <rect width="900" height="580" fill="#0a0f1e"/>
+  <rect width="960" height="620" fill="#f8fafc"/>
 
   <!-- Title -->
-  <text x="450" y="36" text-anchor="middle"
-        font-size="15" font-weight="600" fill="#f1f5f9">
-    SentinelIQ — 5-Layer Investigation Pipeline
+  <text x="480" y="38" text-anchor="middle" font-size="18" font-weight="700" fill="#0f172a">
+    SentinelIQ — AI-Assisted SOC Triage Pipeline
   </text>
-
-  <!-- LAYER LABELS (left side) -->
-  <text x="18" y="108" font-size="9" fill="#475569"
-        font-weight="500" transform="rotate(-90,18,108)">INPUT</text>
-  <text x="18" y="208" font-size="9" fill="#475569"
-        font-weight="500" transform="rotate(-90,18,208)">ENRICH</text>
-  <text x="18" y="308" font-size="9" fill="#475569"
-        font-weight="500" transform="rotate(-90,18,308)">DETECT</text>
-  <text x="18" y="408" font-size="9" fill="#475569"
-        font-weight="500" transform="rotate(-90,18,408)">AI</text>
-  <text x="18" y="510" font-size="9" fill="#475569"
-        font-weight="500" transform="rotate(-90,18,510)">DECIDE</text>
-
-  <!-- ── LAYER 1: INPUT ── -->
-  <!-- Analyst box -->
-  <rect x="50" y="60" width="120" height="52" rx="8"
-        fill="#1e293b" stroke="#334155" stroke-width="1"/>
-  <text x="110" y="80" text-anchor="middle"
-        font-size="11" fill="#94a3b8">Analyst Input</text>
-  <text x="110" y="96" text-anchor="middle"
-        font-size="9" fill="#475569">IP / URL / Login CSV</text>
-  <text x="110" y="108" text-anchor="middle"
-        font-size="9" fill="#475569">Raw alert text</text>
-
-  <!-- React frontend box -->
-  <rect x="220" y="60" width="120" height="52" rx="8"
-        fill="#1e3a5f" stroke="#1d4ed8" stroke-width="1"/>
-  <text x="280" y="80" text-anchor="middle"
-        font-size="11" fill="#93c5fd">React Frontend</text>
-  <text x="280" y="96" text-anchor="middle"
-        font-size="9" fill="#60a5fa">Tailwind CSS</text>
-  <text x="280" y="108" text-anchor="middle"
-        font-size="9" fill="#60a5fa">Dark SOC theme</text>
-
-  <!-- Arrow 1→2 -->
-  <line x1="340" y1="86" x2="390" y2="86"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- FastAPI box -->
-  <rect x="390" y="60" width="130" height="52" rx="8"
-        fill="#1e293b" stroke="#334155" stroke-width="1"/>
-  <text x="455" y="80" text-anchor="middle"
-        font-size="11" fill="#94a3b8">FastAPI Backend</text>
-  <text x="455" y="96" text-anchor="middle"
-        font-size="9" fill="#475569">Python 3.11</text>
-  <text x="455" y="108" text-anchor="middle"
-        font-size="9" fill="#475569">Auto OpenAPI docs</text>
-
-  <!-- Arrow input→enrich -->
-  <line x1="455" y1="112" x2="455" y2="148"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- ── LAYER 2: ENRICHMENT ── -->
-  <rect x="270" y="148" width="130" height="52" rx="8"
-        fill="#1a3a1a" stroke="#16a34a" stroke-width="1"/>
-  <text x="335" y="168" text-anchor="middle"
-        font-size="11" fill="#86efac">VirusTotal</text>
-  <text x="335" y="184" text-anchor="middle"
-        font-size="9" fill="#4ade80">70-engine URL scan</text>
-  <text x="335" y="196" text-anchor="middle"
-        font-size="9" fill="#4ade80">Phishing verdict</text>
-
-  <rect x="420" y="148" width="130" height="52" rx="8"
-        fill="#1a3a1a" stroke="#16a34a" stroke-width="1"/>
-  <text x="485" y="168" text-anchor="middle"
-        font-size="11" fill="#86efac">AbuseIPDB</text>
-  <text x="485" y="184" text-anchor="middle"
-        font-size="9" fill="#4ade80">IP reputation score</text>
-  <text x="485" y="196" text-anchor="middle"
-        font-size="9" fill="#4ade80">Tor / VPN detection</text>
-
-  <rect x="570" y="148" width="130" height="52" rx="8"
-        fill="#1a3a1a" stroke="#16a34a" stroke-width="1"/>
-  <text x="635" y="168" text-anchor="middle"
-        font-size="11" fill="#86efac">Risk Scoring</text>
-  <text x="635" y="184" text-anchor="middle"
-        font-size="9" fill="#4ade80">Weighted composite</text>
-  <text x="635" y="196" text-anchor="middle"
-        font-size="9" fill="#4ade80">Score 0–100</text>
-
-  <!-- Arrows enrich→detect -->
-  <line x1="335" y1="200" x2="335" y2="248"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="485" y1="200" x2="485" y2="248"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="635" y1="200" x2="635" y2="248"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- ── LAYER 3: DETECTION ── -->
-  <rect x="200" y="248" width="130" height="52" rx="8"
-        fill="#2d1a00" stroke="#d97706" stroke-width="1"/>
-  <text x="265" y="268" text-anchor="middle"
-        font-size="11" fill="#fcd34d">Brute Force</text>
-  <text x="265" y="284" text-anchor="middle"
-        font-size="9" fill="#fbbf24">5+ failures / 10 min</text>
-  <text x="265" y="296" text-anchor="middle"
-        font-size="9" fill="#fbbf24">Same IP rule</text>
-
-  <rect x="350" y="248" width="130" height="52" rx="8"
-        fill="#2d1a00" stroke="#d97706" stroke-width="1"/>
-  <text x="415" y="268" text-anchor="middle"
-        font-size="11" fill="#fcd34d">Impossible Travel</text>
-  <text x="415" y="284" text-anchor="middle"
-        font-size="9" fill="#fbbf24">Geo + timestamp</text>
-  <text x="415" y="296" text-anchor="middle"
-        font-size="9" fill="#fbbf24">Physics check</text>
-
-  <rect x="500" y="248" width="130" height="52" rx="8"
-        fill="#2d1a00" stroke="#d97706" stroke-width="1"/>
-  <text x="565" y="268" text-anchor="middle"
-        font-size="11" fill="#fcd34d">Cred Stuffing</text>
-  <text x="565" y="284" text-anchor="middle"
-        font-size="9" fill="#fbbf24">Many users / one IP</text>
-  <text x="565" y="296" text-anchor="middle"
-        font-size="9" fill="#fbbf24">Pattern match</text>
-
-  <rect x="650" y="248" width="130" height="52" rx="8"
-        fill="#2d1a00" stroke="#d97706" stroke-width="1"/>
-  <text x="715" y="268" text-anchor="middle"
-        font-size="11" fill="#fcd34d">MITRE Mapping</text>
-  <text x="715" y="284" text-anchor="middle"
-        font-size="9" fill="#fbbf24">ChromaDB vectors</text>
-  <text x="715" y="296" text-anchor="middle"
-        font-size="9" fill="#fbbf24">Semantic search</text>
-
-  <!-- Arrows detect→AI -->
-  <line x1="415" y1="300" x2="415" y2="348"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="715" y1="300" x2="715" y2="348"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- ── LAYER 4: AI ── -->
-  <rect x="270" y="348" width="180" height="52" rx="8"
-        fill="#2d1635" stroke="#7c3aed" stroke-width="1"/>
-  <text x="360" y="368" text-anchor="middle"
-        font-size="11" fill="#d8b4fe">RAG Pipeline</text>
-  <text x="360" y="384" text-anchor="middle"
-        font-size="9" fill="#c084fc">ChromaDB retrieval</text>
-  <text x="360" y="396" text-anchor="middle"
-        font-size="9" fill="#c084fc">Groq LLaMA 3.1 8B</text>
-
-  <rect x="470" y="348" width="180" height="52" rx="8"
-        fill="#2d1635" stroke="#7c3aed" stroke-width="1"/>
-  <text x="560" y="368" text-anchor="middle"
-        font-size="11" fill="#d8b4fe">Explainability</text>
-  <text x="560" y="384" text-anchor="middle"
-        font-size="9" fill="#c084fc">Signal breakdown</text>
-  <text x="560" y="396" text-anchor="middle"
-        font-size="9" fill="#c084fc">Per-source scores</text>
-
-  <!-- Arrows AI→decision -->
-  <line x1="360" y1="400" x2="360" y2="448"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="560" y1="400" x2="560" y2="448"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- ── LAYER 5: DECISION ── -->
-  <rect x="80" y="448" width="120" height="52" rx="8"
-        fill="#1a0505" stroke="#dc2626" stroke-width="1"/>
-  <text x="140" y="468" text-anchor="middle"
-        font-size="11" fill="#fca5a5">Approve</text>
-  <text x="140" y="484" text-anchor="middle"
-        font-size="9" fill="#f87171">True positive</text>
-  <text x="140" y="496" text-anchor="middle"
-        font-size="9" fill="#f87171">Create incident</text>
-
-  <rect x="220" y="448" width="120" height="52" rx="8"
-        fill="#052e16" stroke="#16a34a" stroke-width="1"/>
-  <text x="280" y="468" text-anchor="middle"
-        font-size="11" fill="#86efac">Reject</text>
-  <text x="280" y="484" text-anchor="middle"
-        font-size="9" fill="#4ade80">False positive</text>
-  <text x="280" y="496" text-anchor="middle"
-        font-size="9" fill="#4ade80">Log &amp; close</text>
-
-  <rect x="360" y="448" width="120" height="52" rx="8"
-        fill="#1c1917" stroke="#f59e0b" stroke-width="1"/>
-  <text x="420" y="468" text-anchor="middle"
-        font-size="11" fill="#fcd34d">Escalate</text>
-  <text x="420" y="484" text-anchor="middle"
-        font-size="9" fill="#fbbf24">Tier 2 review</text>
-  <text x="420" y="496" text-anchor="middle"
-        font-size="9" fill="#fbbf24">Complex cases</text>
-
-  <rect x="500" y="448" width="120" height="52" rx="8"
-        fill="#1e293b" stroke="#334155" stroke-width="1"/>
-  <text x="560" y="468" text-anchor="middle"
-        font-size="11" fill="#94a3b8">PDF Report</text>
-  <text x="560" y="484" text-anchor="middle"
-        font-size="9" fill="#475569">One-click export</text>
-  <text x="560" y="496" text-anchor="middle"
-        font-size="9" fill="#475569">Audit trail</text>
-
-  <rect x="640" y="448" width="120" height="52" rx="8"
-        fill="#1e293b" stroke="#334155" stroke-width="1"/>
-  <text x="700" y="468" text-anchor="middle"
-        font-size="11" fill="#94a3b8">MongoDB</text>
-  <text x="700" y="484" text-anchor="middle"
-        font-size="9" fill="#475569">All decisions saved</text>
-  <text x="700" y="496" text-anchor="middle"
-        font-size="9" fill="#475569">Threat hunting</text>
-
-  <!-- Connector lines input→enrich -->
-  <line x1="170" y1="86" x2="220" y2="86"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- Horizontal lines in enrich layer from FastAPI down -->
-  <line x1="455" y1="148" x2="335" y2="148" stroke="#334155" stroke-width="1"/>
-  <line x1="455" y1="148" x2="635" y2="148" stroke="#334155" stroke-width="1"/>
-
-  <!-- Horizontal line in detect layer -->
-  <line x1="265" y1="348" x2="415" y2="348" stroke="#334155" stroke-width="1"/>
-  <line x1="715" y1="348" x2="560" y2="348" stroke="#334155" stroke-width="1"/>
-  <line x1="265" y1="300" x2="265" y2="348"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="565" y1="300" x2="565" y2="348"
-        stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="480" y="58" text-anchor="middle" font-size="12" fill="#64748b">
+    5-layer investigation system · Real threat intel · MITRE ATT&CK · Human-in-the-loop
+  </text>
 
   <!-- Arrow marker -->
   <defs>
-    <marker id="arr" markerWidth="8" markerHeight="8"
-            refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#475569"/>
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
     </marker>
   </defs>
 
+  <!-- LAYER LABELS -->
+  <rect x="0" y="75" width="64" height="80" fill="#f1f5f9" rx="0"/>
+  <text x="32" y="122" text-anchor="middle" font-size="10" font-weight="600" fill="#475569" transform="rotate(-90,32,122)">INPUT</text>
+
+  <rect x="0" y="175" width="64" height="90" fill="#f0fdf4" rx="0"/>
+  <text x="32" y="228" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a" transform="rotate(-90,32,228)">ENRICH</text>
+
+  <rect x="0" y="285" width="64" height="90" fill="#fefce8" rx="0"/>
+  <text x="32" y="338" text-anchor="middle" font-size="10" font-weight="600" fill="#ca8a04" transform="rotate(-90,32,338)">DETECT</text>
+
+  <rect x="0" y="395" width="64" height="80" fill="#faf5ff" rx="0"/>
+  <text x="32" y="442" text-anchor="middle" font-size="10" font-weight="600" fill="#7c3aed" transform="rotate(-90,32,442)">AI</text>
+
+  <rect x="0" y="495" width="64" height="110" fill="#fff1f2" rx="0"/>
+  <text x="32" y="558" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626" transform="rotate(-90,32,558)">DECIDE</text>
+
+  <!-- ── LAYER 1: INPUT ── -->
+  <!-- Analyst Input -->
+  <rect x="80" y="82" width="140" height="60" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="150" y="106" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">Analyst Input</text>
+  <text x="150" y="122" text-anchor="middle" font-size="10" fill="#64748b">IP / URL / Login CSV</text>
+  <text x="150" y="136" text-anchor="middle" font-size="10" fill="#64748b">Raw alert text</text>
+
+  <!-- Arrow -->
+  <line x1="220" y1="112" x2="268" y2="112" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- React Frontend -->
+  <rect x="270" y="82" width="150" height="60" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="345" y="106" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">React Frontend</text>
+  <text x="345" y="122" text-anchor="middle" font-size="10" fill="#3b82f6">Tailwind CSS</text>
+  <text x="345" y="136" text-anchor="middle" font-size="10" fill="#3b82f6">Dark SOC theme</text>
+
+  <!-- Arrow -->
+  <line x1="420" y1="112" x2="468" y2="112" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- FastAPI Backend -->
+  <rect x="470" y="82" width="150" height="60" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="545" y="106" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">FastAPI Backend</text>
+  <text x="545" y="122" text-anchor="middle" font-size="10" fill="#64748b">Python 3.11</text>
+  <text x="545" y="136" text-anchor="middle" font-size="10" fill="#64748b">Auto API docs</text>
+
+  <!-- Down arrow from FastAPI -->
+  <line x1="545" y1="142" x2="545" y2="178" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ── LAYER 2: ENRICHMENT ── -->
+  <!-- VirusTotal -->
+  <rect x="150" y="180" width="150" height="60" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="225" y="204" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">VirusTotal</text>
+  <text x="225" y="220" text-anchor="middle" font-size="10" fill="#16a34a">70-engine URL scan</text>
+  <text x="225" y="234" text-anchor="middle" font-size="10" fill="#16a34a">Phishing verdict</text>
+
+  <!-- AbuseIPDB -->
+  <rect x="320" y="180" width="150" height="60" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="395" y="204" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">AbuseIPDB</text>
+  <text x="395" y="220" text-anchor="middle" font-size="10" fill="#16a34a">IP reputation score</text>
+  <text x="395" y="234" text-anchor="middle" font-size="10" fill="#16a34a">Tor / VPN detection</text>
+
+  <!-- Risk Scoring -->
+  <rect x="490" y="180" width="150" height="60" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="565" y="204" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">Risk Scoring</text>
+  <text x="565" y="220" text-anchor="middle" font-size="10" fill="#16a34a">Weighted composite</text>
+  <text x="565" y="234" text-anchor="middle" font-size="10" fill="#16a34a">Score 0–100</text>
+
+  <!-- Horizontal connector at top of enrich -->
+  <line x1="225" y1="178" x2="545" y2="178" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Down arrows from enrich -->
+  <line x1="225" y1="240" x2="225" y2="286" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="395" y1="240" x2="395" y2="286" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="565" y1="240" x2="565" y2="286" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ── LAYER 3: DETECTION ── -->
+  <!-- Brute Force -->
+  <rect x="80" y="288" width="145" height="60" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="152" y="312" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Brute Force</text>
+  <text x="152" y="328" text-anchor="middle" font-size="10" fill="#ca8a04">5+ failures / 10 min</text>
+  <text x="152" y="342" text-anchor="middle" font-size="10" fill="#ca8a04">Same IP rule</text>
+
+  <!-- Impossible Travel -->
+  <rect x="240" y="288" width="155" height="60" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="317" y="312" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Impossible Travel</text>
+  <text x="317" y="328" text-anchor="middle" font-size="10" fill="#ca8a04">Geo + timestamp</text>
+  <text x="317" y="342" text-anchor="middle" font-size="10" fill="#ca8a04">Physics check</text>
+
+  <!-- Cred Stuffing -->
+  <rect x="410" y="288" width="145" height="60" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="482" y="312" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Cred Stuffing</text>
+  <text x="482" y="328" text-anchor="middle" font-size="10" fill="#ca8a04">Many users / one IP</text>
+  <text x="482" y="342" text-anchor="middle" font-size="10" fill="#ca8a04">Pattern match</text>
+
+  <!-- MITRE Mapping -->
+  <rect x="570" y="288" width="155" height="60" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="647" y="312" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">MITRE Mapping</text>
+  <text x="647" y="328" text-anchor="middle" font-size="10" fill="#ca8a04">ChromaDB vectors</text>
+  <text x="647" y="342" text-anchor="middle" font-size="10" fill="#ca8a04">Semantic search</text>
+
+  <!-- Down arrows from detect -->
+  <line x1="317" y1="348" x2="317" y2="394" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="647" y1="348" x2="647" y2="394" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="152" y1="348" x2="317" y2="394" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="482" y1="348" x2="317" y2="394" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- ── LAYER 4: AI ── -->
+  <!-- RAG Pipeline -->
+  <rect x="190" y="396" width="190" height="60" rx="10" fill="#faf5ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="285" y="420" text-anchor="middle" font-size="12" font-weight="600" fill="#6d28d9">RAG Pipeline</text>
+  <text x="285" y="436" text-anchor="middle" font-size="10" fill="#7c3aed">ChromaDB retrieval</text>
+  <text x="285" y="450" text-anchor="middle" font-size="10" fill="#7c3aed">Groq LLaMA 3.1 8B</text>
+
+  <!-- Explainability -->
+  <rect x="400" y="396" width="190" height="60" rx="10" fill="#faf5ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="495" y="420" text-anchor="middle" font-size="12" font-weight="600" fill="#6d28d9">Explainability</text>
+  <text x="495" y="436" text-anchor="middle" font-size="10" fill="#7c3aed">Signal breakdown</text>
+  <text x="495" y="450" text-anchor="middle" font-size="10" fill="#7c3aed">Per-source scores</text>
+
+  <!-- Down arrows from AI -->
+  <line x1="285" y1="456" x2="285" y2="494" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="495" y1="456" x2="495" y2="494" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="647" y1="456" x2="647" y2="494" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- ── LAYER 5: DECISION ── -->
+  <!-- Approve -->
+  <rect x="80" y="496" width="118" height="58" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="139" y="520" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">Approve</text>
+  <text x="139" y="536" text-anchor="middle" font-size="10" fill="#16a34a">True positive</text>
+  <text x="139" y="550" text-anchor="middle" font-size="10" fill="#16a34a">Create incident</text>
+
+  <!-- Reject -->
+  <rect x="210" y="496" width="118" height="58" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="269" y="520" text-anchor="middle" font-size="12" font-weight="600" fill="#dc2626">Reject</text>
+  <text x="269" y="536" text-anchor="middle" font-size="10" fill="#dc2626">False positive</text>
+  <text x="269" y="550" text-anchor="middle" font-size="10" fill="#dc2626">Log &amp; close</text>
+
+  <!-- Escalate -->
+  <rect x="340" y="496" width="118" height="58" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="399" y="520" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Escalate</text>
+  <text x="399" y="536" text-anchor="middle" font-size="10" fill="#ca8a04">Tier 2 review</text>
+  <text x="399" y="550" text-anchor="middle" font-size="10" fill="#ca8a04">Complex cases</text>
+
+  <!-- SOAR -->
+  <rect x="470" y="496" width="118" height="58" rx="10" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+  <text x="529" y="520" text-anchor="middle" font-size="12" font-weight="600" fill="#be123c">SOAR</text>
+  <text x="529" y="536" text-anchor="middle" font-size="10" fill="#e11d48">Auto playbooks</text>
+  <text x="529" y="550" text-anchor="middle" font-size="10" fill="#e11d48">Containment</text>
+
+  <!-- PDF Report -->
+  <rect x="600" y="496" width="118" height="58" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="659" y="520" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">PDF Report</text>
+  <text x="659" y="536" text-anchor="middle" font-size="10" fill="#64748b">One-click export</text>
+  <text x="659" y="550" text-anchor="middle" font-size="10" fill="#64748b">Audit trail</text>
+
+  <!-- MongoDB -->
+  <rect x="730" y="496" width="118" height="58" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="789" y="520" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">MongoDB</text>
+  <text x="789" y="536" text-anchor="middle" font-size="10" fill="#64748b">All decisions saved</text>
+  <text x="789" y="550" text-anchor="middle" font-size="10" fill="#64748b">Threat hunting</text>
+
   <!-- Footer -->
-  <text x="450" y="560" text-anchor="middle"
-        font-size="9" fill="#1e293b">
-    SentinelIQ v4.0 — Render (Backend) + Vercel (Frontend) + MongoDB Atlas
+  <text x="480" y="608" text-anchor="middle" font-size="10" fill="#94a3b8">
+    SentinelIQ v4.0 · Render (Backend) · Vercel (Frontend) · MongoDB Atlas
   </text>
+
 </svg>
