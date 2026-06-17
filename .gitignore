@@ -12,3 +12,4 @@ _t*.json
 _login_body.json
 test_bulk.csv
 metrics_results.json
+PROJECT_EXPLAINED.md
