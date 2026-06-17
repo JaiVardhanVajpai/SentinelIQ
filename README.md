@@ -29,7 +29,7 @@ You don't have to take my word for it — try it yourself.
 
 ---
 
-## What is this, in one breath?
+## Overview
 
 Imagine a security analyst as a doctor in a very crowded emergency room. Hundreds of "patients" (security alerts) arrive every hour. Most are harmless. A few are genuinely dangerous. The hard part isn't treatment — it's **triage**: quickly deciding who needs attention *now*.
 
