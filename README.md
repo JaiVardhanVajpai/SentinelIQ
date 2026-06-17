@@ -112,6 +112,8 @@ I tested it on **100 real indicators** — 50 known-bad (Tor exit nodes and flag
 | **Bulk upload** | Drop in a CSV of 50–100 indicators and check them all at once. |
 | **PDF reports** | One click turns an investigation into a clean, professional incident report. |
 | **SOC dashboard** | Live scoreboard — true positives, false positives, decisions still pending. |
+| **SOAR simulation** | On high-risk alerts, automatically generates response playbooks, action items, and simulated containment actions — the way enterprise SOAR platforms work. |
+| **MITRE mitigations** | Every detected technique comes with specific mitigation steps and implementation guidance from the MITRE ATT&CK framework. |
 
 ---
 
