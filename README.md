@@ -74,7 +74,7 @@ The whole system is just five steps stacked on top of each other. Each step has 
 | **2. Enrichment** | It asks trusted threat databases (VirusTotal, AbuseIPDB) "what do *you* know about this?" |
 | **3. Detection** | It runs simple, transparent rules — e.g. *"50 failed logins from one place in 10 minutes? That's a brute-force attack."* |
 | **4. AI** | It pulls up the matching real-world attack playbook and writes a plain-English summary grounded in that evidence. |
-| **5. Decision** | A human approves, rejects, or escalates — and the choice is saved forever for the record. |
+| **5. Decision** | A human approves, rejects, or escalates. On high-risk alerts, SOAR automatically triggers response playbooks and containment actions — and every choice is saved forever for the record. |
 
 ---
 
