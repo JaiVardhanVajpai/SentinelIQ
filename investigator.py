@@ -11,6 +11,7 @@
 import os
 import time
 import datetime
+import xml.etree.ElementTree as ET
 
 import requests
 from dotenv import load_dotenv
@@ -278,6 +279,51 @@ def investigate_url(url: str) -> dict:
 
 
 # ─────────────────────────────────────────
+# SANS ISC — third threat intel source (free, no key)
+# Top-100 most-reported malicious IPs. Used as a fallback
+# alongside AbuseIPDB to catch active attackers AbuseIPDB
+# may not have data on yet.
+# ─────────────────────────────────────────
+def check_sans_isc(ip: str) -> dict:
+    """
+    Check SANS ISC's top-100 malicious IP feed.
+    This catches IPs reported for attacks that
+    AbuseIPDB might not have data on yet.
+    """
+    try:
+        response = requests.get(
+            "https://isc.sans.edu/api/topips/records/100",
+            timeout=8
+        )
+        if response.status_code != 200:
+            return {"found": False, "reports": 0, "targets": 0}
+
+        root = ET.fromstring(response.content)
+
+        for entry in root.findall("ipaddress"):
+            source = entry.find("source").text
+            # Strip leading zeros from each octet to compare
+            normalized = ".".join(
+                str(int(part)) for part in source.split(".")
+            )
+            if normalized == ip:
+                reports = int(entry.find("reports").text)
+                targets = int(entry.find("targets").text)
+                return {
+                    "found": True,
+                    "reports": reports,
+                    "targets": targets,
+                    "rank": int(entry.find("rank").text)
+                }
+
+        return {"found": False, "reports": 0, "targets": 0}
+
+    except Exception:
+        # If SANS ISC is down or slow, don't break the investigation
+        return {"found": False, "reports": 0, "targets": 0}
+
+
+# ─────────────────────────────────────────
 # IP INVESTIGATION
 # ─────────────────────────────────────────
 def investigate_ip(ip: str) -> dict:
@@ -328,6 +374,21 @@ def investigate_ip(ip: str) -> dict:
     else:
         verdict = "CLEAN"
 
+    # Third intel source: SANS ISC top-100 attacker feed.
+    # Bumps the score/verdict if AbuseIPDB missed an active attacker.
+    sans_result = check_sans_isc(ip)
+
+    if sans_result["found"]:
+        # SANS ISC found it in top-100 attackers,
+        # even if AbuseIPDB shows clean
+        sans_bonus = min(40, sans_result["reports"] // 5000)
+        risk_score = min(100, risk_score + sans_bonus)
+
+        if risk_score >= 30 and verdict == "CLEAN":
+            verdict = "SUSPICIOUS"
+        if risk_score >= 70:
+            verdict = "MALICIOUS"
+
     threat_intel = {
         "type": "ip_analysis",
         "ip": ip,
@@ -338,6 +399,7 @@ def investigate_ip(ip: str) -> dict:
         "usage_type": usage_type,
         "total_reports": total_reports,
         "verdict": verdict,
+        "sans_isc": sans_result,
         "primary_mitre": get_mitre_for_ip(abuse_score, isp),
     }
 
@@ -358,8 +420,9 @@ def investigate_ip(ip: str) -> dict:
 
     ai_explanation = explain_ip_alert(threat_intel)
 
-    # Confidence score
-    confidence = abuse_score
+    # Confidence score (reflects the final risk_score, which may
+    # include the SANS ISC bonus — not just the AbuseIPDB score)
+    confidence = risk_score
 
     # Recommended action
     if verdict == "MALICIOUS":
@@ -393,11 +456,17 @@ def investigate_ip(ip: str) -> dict:
         len(mitre_mapping) > 0
     )
 
+    # SANS ISC is shown as its own line below. The AbuseIPDB / Tor /
+    # MITRE split is computed from the remaining (non-SANS) portion so
+    # that every contribution still sums to risk_score exactly.
+    sans_bonus_pts = sans_bonus if sans_result["found"] else 0
+    breakdown_base = total_risk - sans_bonus_pts
+
     if total_risk > 0:
         if is_tor and has_mitre:
-            abuse_contrib = round(total_risk * 0.60)
-            tor_contrib = round(total_risk * 0.25)
-            mitre_contrib = total_risk - abuse_contrib - tor_contrib
+            abuse_contrib = round(breakdown_base * 0.60)
+            tor_contrib = round(breakdown_base * 0.25)
+            mitre_contrib = breakdown_base - abuse_contrib - tor_contrib
             risk_breakdown = [
                 {
                     "source": "AbuseIPDB",
@@ -419,8 +488,8 @@ def investigate_ip(ip: str) -> dict:
                 }
             ]
         elif has_mitre:
-            abuse_contrib = round(total_risk * 0.80)
-            mitre_contrib = total_risk - abuse_contrib
+            abuse_contrib = round(breakdown_base * 0.80)
+            mitre_contrib = breakdown_base - abuse_contrib
             risk_breakdown = [
                 {
                     "source": "AbuseIPDB",
@@ -439,11 +508,20 @@ def investigate_ip(ip: str) -> dict:
             risk_breakdown = [
                 {
                     "source": "AbuseIPDB",
-                    "contribution": int(total_risk),
+                    "contribution": int(breakdown_base),
                     "reason": f"Abuse confidence: {abuse_score_val}/100",
                     "weight": "100%"
                 }
             ]
+
+    # SANS ISC — visible signal, only when it confirmed the IP
+    if sans_result["found"]:
+        risk_breakdown.append({
+            "source": f"SANS ISC — {sans_result['reports']} attack reports (rank #{sans_result['rank']})",
+            "contribution": sans_bonus_pts,
+            "reason": "Independently confirmed as an active attacker by SANS Internet Storm Center, even when other sources showed no data.",
+            "weight": f"{round(sans_bonus_pts / total_risk * 100)}%" if total_risk else "0%"
+        })
 
     # Day 14: investigation timeline (incremental 1s steps)
     _t0 = datetime.datetime.utcnow()
