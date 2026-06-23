@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────
 # SentinelIQ — AI Explainer (Day 6)
 # RAG pipeline: Retrieve (ChromaDB) -> Augment
-# (build prompt) -> Generate (Gemini API).
+# (build prompt) -> Generate (Groq API).
 #
 # Turns a raw alert result into a grounded,
 # analyst-friendly investigation summary.
@@ -31,13 +31,13 @@ if GROQ_KEY and GROQ_KEY.strip() != "":
     _client = Groq(api_key=GROQ_KEY.strip())
 
 
-def get_gemini_explanation(
+def get_ai_explanation(
     alert_type: str,
     alert_data: dict,
     mitre_techniques: list
 ) -> dict:
     """
-    Send the alert + retrieved MITRE context to Gemini and
+    Send the alert + retrieved MITRE context to Groq and
     return a structured, grounded explanation.
 
     Returns a dict with: explanation, primary_mitre,
@@ -124,7 +124,7 @@ def get_gemini_explanation(
 def _extract_recommended_action(text: str) -> str:
     """
     Best-effort pull of the 'recommended action' line out of
-    the Gemini response. Falls back to a generic message if it
+    the Groq response. Falls back to a generic message if it
     cannot be located.
     """
     if not text:
@@ -145,7 +145,7 @@ def explain_url_alert(url_result: dict) -> dict:
     query = f"malicious url phishing {verdict}"
     mitre = search_mitre(query)
 
-    return get_gemini_explanation("url", url_result, mitre)
+    return get_ai_explanation("url", url_result, mitre)
 
 
 def explain_ip_alert(ip_result: dict) -> dict:
@@ -155,7 +155,7 @@ def explain_ip_alert(ip_result: dict) -> dict:
     query = f"malicious ip {isp} {verdict} brute force proxy"
     mitre = search_mitre(query)
 
-    return get_gemini_explanation("ip", ip_result, mitre)
+    return get_ai_explanation("ip", ip_result, mitre)
 
 
 def explain_login_alert(login_result: dict) -> dict:
@@ -177,4 +177,4 @@ def explain_login_alert(login_result: dict) -> dict:
 
     mitre = search_mitre(query)
 
-    return get_gemini_explanation("login", login_result, mitre)
+    return get_ai_explanation("login", login_result, mitre)

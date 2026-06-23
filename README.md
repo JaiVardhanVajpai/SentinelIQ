@@ -1,4 +1,4 @@
-# SentinelIQ — AI-Assisted SOC Triage Engine.
+# SentinelIQ — AI-Assisted SOC Triage Engine
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.136-009688?style=for-the-badge&logo=fastapi&logoColor=white)
@@ -72,7 +72,7 @@ The whole system is just five steps stacked on top of each other. Each step has 
 |-------|------------------|
 | **1. Input** | You give it an IP, a web link, login records, or a CSV file of many at once. |
 | **2. Enrichment** | It asks trusted threat databases (VirusTotal, AbuseIPDB) "what do *you* know about this?" |
-| **3. Detection** | It runs simple, transparent rules — e.g. *"50 failed logins from one place in 10 minutes? That's a brute-force attack."* |
+| **3. Detection** | It runs simple, transparent rules — e.g. *"5 failed logins from one place in 10 minutes? That's a brute-force attack."* |
 | **4. AI** | It pulls up the matching real-world attack playbook and writes a plain-English summary grounded in that evidence. |
 | **5. Decision** | A human approves, rejects, or escalates. On high-risk alerts, SOAR automatically triggers response playbooks and containment actions — and every choice is saved forever for the record. |
 

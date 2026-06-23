@@ -433,7 +433,7 @@ def search_mitre_endpoint(query: str):
 
 
 # ─────────────────────────────────────────
-# EXPLAIN ALERT — RAG (Retrieve + Gemini)
+# EXPLAIN ALERT — RAG (Retrieve + Groq)
 # ─────────────────────────────────────────
 @app.post("/explain-alert")
 def explain_alert(request: ExplainRequest):
