@@ -26,7 +26,6 @@ from models import AnalystDecision
 import requests
 import os
 from dotenv import load_dotenv
-import time
 import csv
 import io
 from fastapi.responses import FileResponse
@@ -144,25 +143,36 @@ def analyze_url(url: str):
             )
 
         analysis_id = response.json()["data"]["id"]
-
-        # Step 2: Wait for engines to complete
-        time.sleep(15)
-
-        # Step 3: Fetch results
-        result = requests.get(
-            f"https://www.virustotal.com/api/v3/analyses/{analysis_id}",
-            headers=headers,
-            timeout=10
+        analysis_url = (
+            f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
         )
 
-        # Check fetch response status
-        if result.status_code != 200:
-            raise HTTPException(
-                status_code=502,
-                detail=f"VirusTotal error: {result.status_code}"
-            )
+        # Step 2+3: Poll until the scan is actually complete.
+        # VirusTotal often still reports "queued" after a single
+        # 15s wait, which previously made fresh URLs look CLEAN.
+        # Retry up to 4 times (15s apart) until status == "completed".
+        import time as time_module
 
-        data = result.json()
+        max_retries = 4
+        wait_seconds = 15
+        data = None
+
+        for attempt in range(max_retries):
+            time_module.sleep(wait_seconds)
+            response = requests.get(
+                analysis_url, headers=headers
+            )
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"VirusTotal error: {response.status_code}"
+                )
+            data = response.json()
+            status = data.get("data", {}).get(
+                "attributes", {}
+            ).get("status", "")
+            if status == "completed":
+                break
 
         # Step 4: Extract stats
         stats = data["data"]["attributes"]["stats"]
@@ -175,6 +185,18 @@ def analyze_url(url: str):
         total_engines = (
             malicious + harmless + suspicious + undetected
         )
+
+        # If VirusTotal still has no data after all retries, be
+        # honest about it instead of silently reporting CLEAN.
+        if total_engines == 0:
+            return {
+                "verdict": "PENDING",
+                "risk_score": 0,
+                "message": "Scan still processing on VirusTotal — try again in a moment",
+                "malicious_count": 0,
+                "total_engines": 0
+            }
+
         risk_score = (
             round((malicious / total_engines) * 100)
             if total_engines > 0 else 0
