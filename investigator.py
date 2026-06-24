@@ -34,6 +34,13 @@ load_dotenv()
 VT_KEY = os.getenv("VIRUSTOTAL_API_KEY")
 ABUSE_KEY = os.getenv("ABUSEIPDB_API_KEY")
 
+# In-memory cache for the SANS ISC top-100 feed so we don't
+# re-fetch and re-parse it on every single IP investigation.
+_sans_cache = {
+    "data": None,
+    "fetched_at": None
+}
+
 
 # ─────────────────────────────────────────
 # Shared helpers
@@ -287,40 +294,56 @@ def investigate_url(url: str) -> dict:
 def check_sans_isc(ip: str) -> dict:
     """
     Check SANS ISC's top-100 malicious IP feed.
-    This catches IPs reported for attacks that
-    AbuseIPDB might not have data on yet.
+    Caches the feed for 10 minutes so we don't
+    re-fetch it on every single investigation.
     """
-    try:
-        response = requests.get(
-            "https://isc.sans.edu/api/topips/records/100",
-            timeout=8
-        )
-        if response.status_code != 200:
-            return {"found": False, "reports": 0, "targets": 0}
+    import time as time_mod
 
-        root = ET.fromstring(response.content)
+    now = time_mod.time()
+    cache_age = (
+        now - _sans_cache["fetched_at"]
+        if _sans_cache["fetched_at"] else 999999
+    )
 
-        for entry in root.findall("ipaddress"):
-            source = entry.find("source").text
-            # Strip leading zeros from each octet to compare
-            normalized = ".".join(
-                str(int(part)) for part in source.split(".")
+    if _sans_cache["data"] is None or cache_age > 600:
+        try:
+            response = requests.get(
+                "https://isc.sans.edu/api/topips/records/100",
+                timeout=5
             )
-            if normalized == ip:
-                reports = int(entry.find("reports").text)
-                targets = int(entry.find("targets").text)
-                return {
-                    "found": True,
-                    "reports": reports,
-                    "targets": targets,
-                    "rank": int(entry.find("rank").text)
-                }
+            if response.status_code == 200:
+                root = ET.fromstring(response.content)
+                parsed = []
+                for entry in root.findall("ipaddress"):
+                    source = entry.find("source").text
+                    normalized = ".".join(
+                        str(int(part)) for part in source.split(".")
+                    )
+                    parsed.append({
+                        "ip": normalized,
+                        "reports": int(entry.find("reports").text),
+                        "targets": int(entry.find("targets").text),
+                        "rank": int(entry.find("rank").text)
+                    })
+                _sans_cache["data"] = parsed
+                _sans_cache["fetched_at"] = now
+            else:
+                _sans_cache["data"] = []
+                _sans_cache["fetched_at"] = now
+        except Exception:
+            _sans_cache["data"] = []
+            _sans_cache["fetched_at"] = now
 
-        return {"found": False, "reports": 0, "targets": 0}
+    for entry in _sans_cache["data"]:
+        if entry["ip"] == ip:
+            return {
+                "found": True,
+                "reports": entry["reports"],
+                "targets": entry["targets"],
+                "rank": entry["rank"]
+            }
 
-    except Exception:
-        # If SANS ISC is down or slow, don't break the investigation
-        return {"found": False, "reports": 0, "targets": 0}
+    return {"found": False, "reports": 0, "targets": 0}
 
 
 # ─────────────────────────────────────────
