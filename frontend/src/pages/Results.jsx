@@ -95,6 +95,17 @@ const MITIGATION_DETAILS = {
   }
 };
 
+// All risk-breakdown bars share one color reflecting the OVERALL
+// verdict, so a small individual contribution never looks "safe"
+// when the verdict is suspicious / previously-malicious.
+const getBreakdownBarColor = (verdict) => {
+  if (verdict === 'MALICIOUS') return '#ef4444';
+  if (verdict === 'SUSPICIOUS') return '#f59e0b';
+  if (verdict === 'PREVIOUSLY_MALICIOUS') return '#f97316';
+  if (verdict === 'UNRATED') return '#64748b';
+  return '#10b981'; // CLEAN
+};
+
 function Results() {
   const [data, setData] = useState(null);
   const [decision, setDecision] = useState(null);
@@ -376,12 +387,8 @@ function Results() {
                   )
                 : 0;
 
-              const barColor =
-                item.contribution >= 40
-                  ? '#ef4444'
-                  : item.contribution >= 20
-                  ? '#f59e0b'
-                  : '#10b981';
+              // Single color for every bar, based on the overall verdict
+              const barColor = getBreakdownBarColor(data.verdict);
 
               return (
                 <div key={index}>
@@ -435,16 +442,8 @@ function Results() {
             <span className="text-xs font-medium px-3
               py-1 rounded-full"
               style={{
-                background: data.risk_score >= 70
-                  ? 'rgba(239,68,68,0.15)'
-                  : data.risk_score >= 30
-                  ? 'rgba(245,158,11,0.15)'
-                  : 'rgba(16,185,129,0.15)',
-                color: data.risk_score >= 70
-                  ? '#ef4444'
-                  : data.risk_score >= 30
-                  ? '#f59e0b'
-                  : '#10b981',
+                background: `${getBreakdownBarColor(data.verdict)}26`,
+                color: getBreakdownBarColor(data.verdict),
                 border: '1px solid currentColor'
               }}>
               {data.risk_score >= 70
