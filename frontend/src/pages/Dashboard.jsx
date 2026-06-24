@@ -136,7 +136,11 @@ function Dashboard() {
   ].filter((d) => d.value > 0);
 
   const barData = items
-    .filter(inv => (inv.risk_score || 0) > 0 || inv.verdict === 'UNRATED')
+    .filter(inv =>
+      (inv.risk_score || 0) > 0
+      || inv.verdict === 'UNRATED'
+      || inv.verdict === 'CLEAN'
+    )
     .slice(0, 7)
     .map(inv => ({
       name: (inv.target || inv.input_value || '').slice(0, 10),
@@ -360,7 +364,7 @@ function Dashboard() {
                 labelStyle={{ color: '#94a3b8' }}
                 itemStyle={{ color: '#f1f5f9' }}
               />
-              <Bar dataKey="risk" name="Risk Score" minPointSize={4} radius={[4, 4, 0, 0]}>
+              <Bar dataKey="risk" name="Risk Score" minPointSize={6} radius={[4, 4, 0, 0]}>
                 {barData.map((entry, index) => (
                   <Cell key={index} fill={getRiskBarColor(entry)} />
                 ))}
