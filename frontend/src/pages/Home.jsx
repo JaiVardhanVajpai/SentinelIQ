@@ -115,6 +115,11 @@ function Home() {
             type="text"
             value={value}
             onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                runInvestigation();
+              }
+            }}
             placeholder={
               tab === 'url' ? 'https://suspicious-site.example' : '185.220.101.45'
             }
