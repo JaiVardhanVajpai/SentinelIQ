@@ -437,6 +437,15 @@ def investigate_ip(ip: str) -> dict:
         sans_bonus = min(40, sans_result["reports"] // 5000)
         risk_score = min(100, risk_score + sans_bonus)
 
+    # An IP that AbuseIPDB has NO usable record for (no country, isp,
+    # or domain) is genuinely "no data" → UNRATED. A public IP that
+    # HAS a real record but zero abuse is genuinely CLEAN, not UNRATED.
+    has_no_data = (
+        not country
+        and not isp
+        and not domain
+    )
+
     # Determine verdict using multiple signals.
     # Non-routable IPs override everything else (even SANS).
     if is_non_routable:
@@ -446,8 +455,13 @@ def investigate_ip(ip: str) -> dict:
         # Recognized known-good public service — stray reports ignored
         verdict = "CLEAN"
         risk_score = 0
-    elif total_reports == 0 and not sans_result["found"]:
+    elif has_no_data and total_reports == 0 and not sans_result["found"]:
+        # AbuseIPDB has no usable record at all for this IP
         verdict = "UNRATED"
+        risk_score = 0
+    elif total_reports == 0 and abuse_score == 0 and not sans_result["found"]:
+        # Real record, zero reports, zero abuse → genuinely clean
+        verdict = "CLEAN"
         risk_score = 0
     elif abuse_score >= 80 or (sans_result["found"] and sans_result["reports"] > 50000):
         verdict = "MALICIOUS"
