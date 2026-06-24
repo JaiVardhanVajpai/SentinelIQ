@@ -136,10 +136,12 @@ function Dashboard() {
   ].filter((d) => d.value > 0);
 
   const barData = items
+    .filter(inv => (inv.risk_score || 0) > 0 || inv.verdict === 'UNRATED')
     .slice(0, 7)
     .map(inv => ({
       name: (inv.target || inv.input_value || '').slice(0, 10),
-      risk: typeof inv.risk_score === 'number' ? inv.risk_score : 0
+      risk: typeof inv.risk_score === 'number' ? inv.risk_score : 0,
+      verdict: inv.verdict || 'CLEAN'
     }));
 
   const displayedInvestigations = verdictFilter
@@ -150,10 +152,13 @@ function Dashboard() {
     .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))
     .slice(0, 6);
 
-  const getRiskBarColor = (score) => {
-    if (score >= 70) return '#ef4444';
-    if (score >= 30) return '#f59e0b';
-    return '#10b981';
+  const getRiskBarColor = (item) => {
+    const verdict = item.verdict || '';
+    if (verdict === 'MALICIOUS') return '#ef4444';
+    if (verdict === 'SUSPICIOUS') return '#f59e0b';
+    if (verdict === 'PREVIOUSLY_MALICIOUS') return '#f97316';
+    if (verdict === 'UNRATED') return '#64748b';
+    return '#10b981'; // CLEAN
   };
 
   // Most common MITRE technique across all investigations
@@ -266,13 +271,14 @@ function Dashboard() {
           </p>
           {showMitreInfo && (
             <div style={{
-              fontSize: '11px',
+              fontSize: '12px',
               color: '#94a3b8',
               marginTop: '8px',
-              padding: '8px',
+              padding: '10px',
               background: '#0d1526',
               borderRadius: '6px',
-              lineHeight: '1.5'
+              lineHeight: '1.6',
+              wordBreak: 'break-word'
             }}>
               {mitreInfo}
             </div>
@@ -319,7 +325,7 @@ function Dashboard() {
               />
               <Legend
                 formatter={(value) => (
-                  <span style={{ color: '#9ca3af', fontSize: '12px' }}>
+                  <span style={{ color: '#9ca3af', fontSize: '13px' }}>
                     {value}
                   </span>
                 )}
@@ -340,9 +346,9 @@ function Dashboard() {
                 tickFormatter={(val) =>
                   val.length > 8 ? val.slice(0, 8) + '..' : val
                 }
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: '#6b7280', fontSize: 12 }}
               />
-              <YAxis domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 12 }} />
               <Tooltip
                 cursor={{ fill: '#1f2937' }}
                 contentStyle={{
@@ -356,18 +362,52 @@ function Dashboard() {
               />
               <Bar dataKey="risk" name="Risk Score" minPointSize={4} radius={[4, 4, 0, 0]}>
                 {barData.map((entry, index) => (
-                  <Cell key={index} fill={getRiskBarColor(entry.risk)} />
+                  <Cell key={index} fill={getRiskBarColor(entry)} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+
+          {/* Color legend — matches the Verdict Distribution legend style */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: '14px',
+            marginTop: '8px'
+          }}>
+            {[
+              { label: 'Malicious', color: '#ef4444' },
+              { label: 'Previously Malicious', color: '#f97316' },
+              { label: 'Suspicious', color: '#f59e0b' },
+              { label: 'Clean', color: '#10b981' },
+              { label: 'Unrated', color: '#64748b' },
+            ].map((entry) => (
+              <span key={entry.label} style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#9ca3af',
+                fontSize: '13px'
+              }}>
+                <span style={{
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '2px',
+                  background: entry.color,
+                  display: 'inline-block'
+                }} />
+                {entry.label}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Recent table */}
       {verdictFilter && (
         <div style={{
-          fontSize: '12px',
+          fontSize: '13px',
           color: '#60a5fa',
           marginBottom: '8px'
         }}>
