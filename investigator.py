@@ -11,6 +11,7 @@
 import os
 import time
 import datetime
+import concurrent.futures
 import xml.etree.ElementTree as ET
 
 import requests
@@ -347,16 +348,16 @@ def check_sans_isc(ip: str) -> dict:
 
 
 # ─────────────────────────────────────────
-# IP INVESTIGATION
+# AbuseIPDB lookup (own function so it can run in a thread pool
+# concurrently with the SANS ISC check — they don't depend on
+# each other).
 # ─────────────────────────────────────────
-def investigate_ip(ip: str) -> dict:
-    """Full investigation for an IP (AbuseIPDB + MITRE + AI)."""
-    inv_id, timestamp = _new_investigation_id()
+def _call_abuseipdb(ip: str) -> dict:
+    """Query AbuseIPDB and return its 'data' object (raises on error)."""
     headers = {
         "Key": ABUSE_KEY.strip(),
         "Accept": "application/json"
     }
-
     response = requests.get(
         "https://api.abuseipdb.com/api/v2/check",
         headers=headers,
@@ -369,8 +370,24 @@ def investigate_ip(ip: str) -> dict:
     )
     if response.status_code != 200:
         raise RuntimeError(f"AbuseIPDB error: {response.status_code}")
+    return response.json()["data"]
 
-    data = response.json()["data"]
+
+# ─────────────────────────────────────────
+# IP INVESTIGATION
+# ─────────────────────────────────────────
+def investigate_ip(ip: str) -> dict:
+    """Full investigation for an IP (AbuseIPDB + MITRE + AI)."""
+    inv_id, timestamp = _new_investigation_id()
+
+    # AbuseIPDB and SANS ISC are independent lookups, so run them
+    # concurrently in a thread pool (requests is synchronous) to
+    # shave the slower of the two off the total response time.
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        abuseipdb_future = executor.submit(_call_abuseipdb, ip)
+        sans_future = executor.submit(check_sans_isc, ip)
+        data = abuseipdb_future.result()
+        sans_result = sans_future.result()
 
     abuse_score = data["abuseConfidenceScore"]
     country = data["countryCode"]
@@ -397,10 +414,9 @@ def investigate_ip(ip: str) -> dict:
     else:
         verdict = "CLEAN"
 
-    # Third intel source: SANS ISC top-100 attacker feed.
-    # Bumps the score/verdict if AbuseIPDB missed an active attacker.
-    sans_result = check_sans_isc(ip)
-
+    # Third intel source: SANS ISC top-100 attacker feed (fetched
+    # concurrently with AbuseIPDB above). Bumps the score/verdict
+    # if AbuseIPDB missed an active attacker.
     if sans_result["found"]:
         # SANS ISC found it in top-100 attackers,
         # even if AbuseIPDB shows clean

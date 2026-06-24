@@ -64,6 +64,21 @@ if not GROQ_KEY or GROQ_KEY.strip() == "":
     raise RuntimeError("GROQ_API_KEY is missing from .env")
 
 
+@app.on_event("startup")
+async def warmup_connections():
+    """
+    Warm up the MongoDB connection at server startup instead of
+    on the first user request, so the first real investigation
+    isn't slowed down by connection setup.
+    """
+    try:
+        db = get_db()
+        await db.find_one({})
+        print("[STARTUP] MongoDB connection warmed up")
+    except Exception as e:
+        print(f"[STARTUP] MongoDB warmup failed: {e}")
+
+
 # ─────────────────────────────────────────
 # REQUEST MODEL — Login Analysis
 # ─────────────────────────────────────────
