@@ -396,6 +396,28 @@ def investigate_ip(ip: str) -> dict:
     usage_type = data.get("usageType", "unknown")
     isp = data.get("isp", "unknown")
 
+    # Private / reserved IPs are not internet-routable. AbuseIPDB
+    # still returns a (spurious) totalReports for them from
+    # misconfigured reporters, so we must disregard ALL signal for
+    # these — including any coincidental SANS match — and force UNRATED.
+    is_public = data.get("isPublic", True)
+    usage_type_raw = data.get("usageType", "") or ""
+    is_non_routable = (
+        not is_public
+        or usage_type_raw.lower() == "reserved"
+    )
+    # A public IP that AbuseIPDB whitelists is a recognized known-good
+    # service (Google DNS, Cloudflare, etc.) — treat it as CLEAN rather
+    # than letting stray reports push it to PREVIOUSLY_MALICIOUS.
+    is_whitelisted_public = (
+        is_public
+        and data.get("isWhitelisted", False)
+        and not is_non_routable
+    )
+    if is_non_routable:
+        # A private IP cannot genuinely be a known internet attacker
+        sans_result = {"found": False, "reports": 0, "targets": 0}
+
     # Same logic as /analyze-ip
     risk_score = abuse_score
 
@@ -415,8 +437,16 @@ def investigate_ip(ip: str) -> dict:
         sans_bonus = min(40, sans_result["reports"] // 5000)
         risk_score = min(100, risk_score + sans_bonus)
 
-    # Determine verdict using multiple signals
-    if total_reports == 0 and not sans_result["found"]:
+    # Determine verdict using multiple signals.
+    # Non-routable IPs override everything else (even SANS).
+    if is_non_routable:
+        verdict = "UNRATED"
+        risk_score = 0
+    elif is_whitelisted_public:
+        # Recognized known-good public service — stray reports ignored
+        verdict = "CLEAN"
+        risk_score = 0
+    elif total_reports == 0 and not sans_result["found"]:
         verdict = "UNRATED"
         risk_score = 0
     elif abuse_score >= 80 or (sans_result["found"] and sans_result["reports"] > 50000):
@@ -478,7 +508,11 @@ def investigate_ip(ip: str) -> dict:
     confidence = risk_score
 
     # Recommended action
-    if verdict == "MALICIOUS":
+    if is_non_routable:
+        recommended_action = "No action required — private or reserved IP address (not internet-routable)"
+    elif is_whitelisted_public:
+        recommended_action = "No action required — recognized as a known-good public service"
+    elif verdict == "MALICIOUS":
         recommended_action = "Block IP at firewall immediately"
     elif verdict == "SUSPICIOUS":
         recommended_action = "Monitor traffic from this IP"
