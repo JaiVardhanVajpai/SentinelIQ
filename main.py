@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -77,6 +77,15 @@ async def warmup_connections():
         print("[STARTUP] MongoDB connection warmed up")
     except Exception as e:
         print(f"[STARTUP] MongoDB warmup failed: {e}")
+
+    # Warm the SANS ISC feed cache so the first real investigation
+    # doesn't pay the ~2s feed fetch. Never let this block startup.
+    try:
+        from investigator import check_sans_isc
+        check_sans_isc("0.0.0.0")  # dummy IP — just triggers the cache fill
+        print("[STARTUP] SANS ISC feed cache warmed up")
+    except Exception as e:
+        print(f"[STARTUP] SANS ISC warmup failed: {e}")
 
 
 # ─────────────────────────────────────────
@@ -496,7 +505,7 @@ def explain_alert(request: ExplainRequest):
 # UNIFIED INVESTIGATION — end-to-end report
 # ─────────────────────────────────────────
 @app.post("/investigate")
-async def investigate(request: InvestigateRequest):
+async def investigate(request: InvestigateRequest, background_tasks: BackgroundTasks):
 
     valid_types = ["url", "ip", "login"]
 
@@ -528,7 +537,9 @@ async def investigate(request: InvestigateRequest):
         else:  # login
             result = investigate_login(request.events)
 
-        await save_investigation(result)
+        # Persist in the background so the response returns immediately.
+        # save_investigation handles its own errors (logs, never raises).
+        background_tasks.add_task(save_investigation, result)
         return result
 
     except HTTPException:

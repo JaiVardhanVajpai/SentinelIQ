@@ -515,7 +515,19 @@ def investigate_ip(ip: str) -> dict:
             mitre_with_mitigations.append(technique_copy)
         mitre_mapping = mitre_with_mitigations
 
-    ai_explanation = explain_ip_alert(threat_intel)
+    # Skip the Groq AI call for clean / unrated verdicts with no risk —
+    # there is no real threat to explain, and it saves ~0.6-0.8s. Keep
+    # the same response shape so the frontend renders consistently.
+    if verdict not in ("CLEAN", "UNRATED") or risk_score > 0:
+        ai_explanation = explain_ip_alert(threat_intel)
+    else:
+        ai_explanation = {
+            "explanation": "No significant threat detected — AI analysis skipped for clean/unrated verdicts to optimize response time.",
+            "primary_mitre": "N/A",
+            "recommended_action": "No action required",
+            "ai_model": "skipped",
+            "grounded": False,
+        }
 
     # Confidence score (reflects the final risk_score, which may
     # include the SANS ISC bonus — not just the AbuseIPDB score)
