@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 
 const links = [
   { to: '/', label: 'Investigate', end: true },
@@ -21,8 +21,8 @@ function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-gray-900/80 backdrop-blur border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
+        {/* Logo — clicking navigates home */}
+        <Link to="/" className="flex items-center gap-3">
           <div className="relative">
             <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-500/40">
               S
@@ -37,7 +37,7 @@ function Navbar() {
               SOC Triage Engine
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Links */}
         <div className="flex items-center gap-2">
