@@ -11,6 +11,8 @@ const riskColor = (score) => {
 const verdictStyle = (v) => ({
   MALICIOUS: { bg: 'rgba(239,68,68,0.15)', color: '#ef4444' },
   CLEAN:     { bg: 'rgba(16,185,129,0.15)', color: '#10b981' },
+  PREVIOUSLY_MALICIOUS: { bg: 'rgba(249,115,22,0.15)', color: '#f97316' },
+  UNRATED:   { bg: 'rgba(100,116,139,0.15)', color: '#64748b' },
   'NO DATA': { bg: 'rgba(100,116,139,0.15)', color: '#64748b' },
 }[v] ?? { bg: 'rgba(245,158,11,0.15)', color: '#f59e0b' });
 
@@ -261,7 +263,7 @@ function BulkUpload() {
                             fontSize:'11px', fontWeight:'700',
                             padding:'3px 10px', borderRadius:'20px',
                             background: vs.bg, color: vs.color
-                          }}>{r.verdict}</span>
+                          }}>{String(r.verdict).replace(/_/g, ' ')}</span>
                         </td>
                         <td style={{
                           padding:'12px 16px', fontSize:'14px',

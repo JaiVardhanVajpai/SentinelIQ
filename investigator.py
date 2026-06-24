@@ -407,26 +407,35 @@ def investigate_ip(ip: str) -> dict:
         }
     }
 
-    if abuse_score >= 80:
-        verdict = "MALICIOUS"
-    elif abuse_score >= 30:
-        verdict = "SUSPICIOUS"
-    else:
-        verdict = "CLEAN"
-
     # Third intel source: SANS ISC top-100 attacker feed (fetched
-    # concurrently with AbuseIPDB above). Bumps the score/verdict
-    # if AbuseIPDB missed an active attacker.
+    # concurrently with AbuseIPDB above). Adds to the risk score
+    # when AbuseIPDB missed an active attacker.
+    sans_bonus = 0
     if sans_result["found"]:
-        # SANS ISC found it in top-100 attackers,
-        # even if AbuseIPDB shows clean
         sans_bonus = min(40, sans_result["reports"] // 5000)
         risk_score = min(100, risk_score + sans_bonus)
 
-        if risk_score >= 30 and verdict == "CLEAN":
-            verdict = "SUSPICIOUS"
-        if risk_score >= 70:
-            verdict = "MALICIOUS"
+    # Determine verdict using multiple signals
+    if total_reports == 0 and not sans_result["found"]:
+        verdict = "UNRATED"
+        risk_score = 0
+    elif abuse_score >= 80 or (sans_result["found"] and sans_result["reports"] > 50000):
+        verdict = "MALICIOUS"
+    elif abuse_score >= 30 or (sans_result["found"] and sans_result["reports"] > 5000):
+        verdict = "SUSPICIOUS"
+    elif total_reports > 0 and abuse_score < 10:
+        # Has historical reports but currently low score
+        # suggests it was bad before but cleaned up
+        verdict = "PREVIOUSLY_MALICIOUS"
+    else:
+        verdict = "CLEAN"
+
+    # Keep risk_score meaningful for each verdict category
+    if verdict == "UNRATED":
+        risk_score = 0
+    elif verdict == "PREVIOUSLY_MALICIOUS":
+        # Not fully trusted even though currently clean — moderate floor
+        risk_score = max(risk_score, 20)
 
     threat_intel = {
         "type": "ip_analysis",
@@ -468,6 +477,10 @@ def investigate_ip(ip: str) -> dict:
         recommended_action = "Block IP at firewall immediately"
     elif verdict == "SUSPICIOUS":
         recommended_action = "Monitor traffic from this IP"
+    elif verdict == "PREVIOUSLY_MALICIOUS":
+        recommended_action = "Monitor — IP has prior malicious history"
+    elif verdict == "UNRATED":
+        recommended_action = "No reputation data — review manually"
     else:
         recommended_action = "No action required"
 

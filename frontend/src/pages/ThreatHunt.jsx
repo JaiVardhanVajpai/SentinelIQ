@@ -371,15 +371,23 @@ function ThreatHunt() {
                         borderRadius: '20px',
                         background: inv.verdict === 'MALICIOUS'
                           ? 'rgba(239,68,68,0.15)'
+                          : inv.verdict === 'PREVIOUSLY_MALICIOUS'
+                          ? 'rgba(249,115,22,0.15)'
+                          : inv.verdict === 'UNRATED'
+                          ? 'rgba(100,116,139,0.15)'
                           : inv.verdict === 'CLEAN'
                           ? 'rgba(16,185,129,0.15)'
                           : 'rgba(245,158,11,0.15)',
                         color: inv.verdict === 'MALICIOUS'
                           ? '#ef4444'
+                          : inv.verdict === 'PREVIOUSLY_MALICIOUS'
+                          ? '#f97316'
+                          : inv.verdict === 'UNRATED'
+                          ? '#64748b'
                           : inv.verdict === 'CLEAN'
                           ? '#10b981' : '#f59e0b'
                       }}>
-                        {inv.verdict}
+                        {String(inv.verdict).replace(/_/g, ' ')}
                       </span>
                     </div>
                   </div>

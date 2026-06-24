@@ -19,14 +19,19 @@ const COLORS = {
   MALICIOUS: '#ef4444',
   SUSPICIOUS: '#f59e0b',
   CLEAN: '#22c55e',
+  PREVIOUSLY_MALICIOUS: '#f97316',
+  UNRATED: '#64748b',
   OTHER: '#6b7280',
 };
 
 function bucket(verdict = '') {
   const v = String(verdict).toUpperCase();
+  // PREVIOUSLY_MALICIOUS must be checked before MALICIOUS (it contains it)
+  if (v.includes('PREVIOUSLY')) return 'PREVIOUSLY_MALICIOUS';
   if (v.includes('MALICIOUS')) return 'MALICIOUS';
   if (v.includes('SUSPICIOUS') || v.includes('ANOMALY')) return 'SUSPICIOUS';
   if (v.includes('CLEAN') || v.includes('NO ANOMALY')) return 'CLEAN';
+  if (v.includes('UNRATED')) return 'UNRATED';
   return 'OTHER';
 }
 
@@ -113,6 +118,8 @@ function Dashboard() {
   const malicious = items.filter((i) => bucket(i.verdict) === 'MALICIOUS').length;
   const clean = items.filter((i) => bucket(i.verdict) === 'CLEAN').length;
   const suspicious = items.filter((i) => bucket(i.verdict) === 'SUSPICIOUS').length;
+  const previouslyMalicious = items.filter((i) => bucket(i.verdict) === 'PREVIOUSLY_MALICIOUS').length;
+  const unrated = items.filter((i) => bucket(i.verdict) === 'UNRATED').length;
   const avgRisk =
     total > 0
       ? Math.round(
@@ -122,8 +129,10 @@ function Dashboard() {
 
   const pieData = [
     { name: 'Malicious', value: malicious, key: 'MALICIOUS' },
+    { name: 'Previously Malicious', value: previouslyMalicious, key: 'PREVIOUSLY_MALICIOUS' },
     { name: 'Suspicious', value: suspicious, key: 'SUSPICIOUS' },
     { name: 'Clean', value: clean, key: 'CLEAN' },
+    { name: 'Unrated', value: unrated, key: 'UNRATED' },
   ].filter((d) => d.value > 0);
 
   const barData = items

@@ -759,10 +759,14 @@ function Results() {
                             ? '#10b981'
                             : String(v) === 'SUSPICIOUS'
                             ? '#f59e0b'
+                            : String(v) === 'PREVIOUSLY_MALICIOUS'
+                            ? '#f97316'
+                            : String(v) === 'UNRATED'
+                            ? '#64748b'
                             : 'inherit'
                         }}
                       >
-                        {formatValue(k, v)}
+                        {String(formatValue(k, v)).replace(/_/g, ' ')}
                       </span>
                     ) : (
                       formatValue(k, v)

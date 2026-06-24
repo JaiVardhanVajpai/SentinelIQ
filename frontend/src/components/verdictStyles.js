@@ -2,6 +2,20 @@
 
 export function verdictTheme(verdict = '') {
   const v = String(verdict).toUpperCase();
+  // Display label: underscores → spaces (e.g. PREVIOUSLY_MALICIOUS)
+  const label = v.replace(/_/g, ' ');
+  // NOTE: check PREVIOUSLY_MALICIOUS before MALICIOUS, since the
+  // string contains "MALICIOUS" and would otherwise match red.
+  if (v.includes('PREVIOUSLY')) {
+    return {
+      text: 'text-orange-400',      // #fb923c text on #f97316 family
+      bg: 'bg-orange-500/10',
+      ring: 'ring-orange-500/40',
+      solid: 'bg-orange-600',
+      bar: 'bg-orange-500',          // orange-500 = #f97316
+      label,
+    };
+  }
   if (v.includes('MALICIOUS')) {
     return {
       text: 'text-red-400',
@@ -9,7 +23,7 @@ export function verdictTheme(verdict = '') {
       ring: 'ring-red-500/40',
       solid: 'bg-red-600',
       bar: 'bg-red-500',
-      label: v,
+      label,
     };
   }
   if (v.includes('SUSPICIOUS') || v.includes('ANOMALY')) {
@@ -19,7 +33,7 @@ export function verdictTheme(verdict = '') {
       ring: 'ring-amber-500/40',
       solid: 'bg-amber-500',
       bar: 'bg-amber-500',
-      label: v,
+      label,
     };
   }
   if (v.includes('CLEAN') || v.includes('NO ANOMALY') || v.includes('LOW RISK')) {
@@ -29,7 +43,17 @@ export function verdictTheme(verdict = '') {
       ring: 'ring-green-500/40',
       solid: 'bg-green-600',
       bar: 'bg-green-500',
-      label: v,
+      label,
+    };
+  }
+  if (v.includes('UNRATED')) {
+    return {
+      text: 'text-slate-400',        // slate family = #64748b
+      bg: 'bg-slate-500/10',
+      ring: 'ring-slate-500/40',
+      solid: 'bg-slate-600',
+      bar: 'bg-slate-500',           // slate-500 = #64748b
+      label,
     };
   }
   return {
@@ -38,7 +62,7 @@ export function verdictTheme(verdict = '') {
     ring: 'ring-gray-500/40',
     solid: 'bg-gray-600',
     bar: 'bg-gray-500',
-    label: v || 'UNKNOWN',
+    label: label || 'UNKNOWN',
   };
 }
 
