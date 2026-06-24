@@ -451,20 +451,25 @@ def investigate_ip(ip: str) -> dict:
         "primary_mitre": get_mitre_for_ip(abuse_score, isp),
     }
 
-    # MITRE retrieval (semantic) + AI explanation (RAG)
-    mitre_mapping = search_mitre(
-        f"malicious ip {isp} {verdict} brute force proxy"
-    )
-
-    # Day 13: attach recommended mitigations to each technique
-    mitre_with_mitigations = []
-    for technique in (mitre_mapping or []):
-        technique_copy = dict(technique)
-        technique_copy["mitigations"] = get_mitigations(
-            technique.get("technique_id", "")
+    # MITRE retrieval (semantic) + AI explanation (RAG).
+    # Only map an attack technique when there is real threat signal —
+    # showing MITRE for an UNRATED or risk-0 IP is misleading.
+    if verdict == "UNRATED" or risk_score == 0:
+        mitre_mapping = []
+    else:
+        mitre_mapping = search_mitre(
+            f"malicious ip {isp} {verdict} brute force proxy"
         )
-        mitre_with_mitigations.append(technique_copy)
-    mitre_mapping = mitre_with_mitigations
+
+        # Day 13: attach recommended mitigations to each technique
+        mitre_with_mitigations = []
+        for technique in (mitre_mapping or []):
+            technique_copy = dict(technique)
+            technique_copy["mitigations"] = get_mitigations(
+                technique.get("technique_id", "")
+            )
+            mitre_with_mitigations.append(technique_copy)
+        mitre_mapping = mitre_with_mitigations
 
     ai_explanation = explain_ip_alert(threat_intel)
 
