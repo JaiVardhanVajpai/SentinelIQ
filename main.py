@@ -591,8 +591,8 @@ async def threat_hunt(
             ]
         }
         if days > 0:
-            from datetime import datetime, timedelta
-            cutoff = datetime.utcnow() - timedelta(days=days)
+            from datetime import datetime, timedelta, timezone
+            cutoff = datetime.now(timezone.utc) - timedelta(days=days)
             query_filter["timestamp"] = {"$gte": cutoff.isoformat()}
 
         results = await db.find(

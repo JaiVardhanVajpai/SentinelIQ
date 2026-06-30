@@ -339,7 +339,7 @@ function Results() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-400">Timestamp</span>
-              <span className="font-mono text-gray-300">{data.timestamp}</span>
+              <span className="font-mono text-gray-300">{new Date(data.timestamp).toLocaleString()}</span>
             </div>
           </div>
         </Card>

@@ -162,7 +162,7 @@ function History() {
                 <p className="font-mono text-sm text-gray-200 truncate">
                   {item.input_value}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">{item.timestamp}</p>
+                <p className="text-xs text-gray-500 mt-1">{new Date(item.timestamp).toLocaleString()}</p>
               </div>
 
               <div className="flex items-center gap-6">

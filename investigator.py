@@ -48,7 +48,7 @@ _sans_cache = {
 # ─────────────────────────────────────────
 def _new_investigation_id():
     """Return (investigation_id, iso_timestamp)."""
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(datetime.timezone.utc)
     inv_id = f"INV-{now.strftime('%Y%m%d%H%M%S')}"
     return inv_id, now.isoformat()
 
@@ -258,7 +258,7 @@ def investigate_url(url: str) -> dict:
         ]
 
     # Day 14: investigation timeline (incremental 1s steps)
-    _t0 = datetime.datetime.utcnow()
+    _t0 = datetime.datetime.now(datetime.timezone.utc)
     _sec = lambda n: (_t0 + datetime.timedelta(seconds=n)).isoformat()
     timeline = [
         {
@@ -668,7 +668,7 @@ def investigate_ip(ip: str) -> dict:
         })
 
     # Day 14: investigation timeline (incremental 1s steps)
-    _t0 = datetime.datetime.utcnow()
+    _t0 = datetime.datetime.now(datetime.timezone.utc)
     _sec = lambda n: (_t0 + datetime.timedelta(seconds=n)).isoformat()
     timeline = [
         {
@@ -844,7 +844,7 @@ def investigate_login(events: list) -> dict:
             })
 
     # Day 14: investigation timeline (incremental 1s steps)
-    _t0 = datetime.datetime.utcnow()
+    _t0 = datetime.datetime.now(datetime.timezone.utc)
     _sec = lambda n: (_t0 + datetime.timedelta(seconds=n)).isoformat()
     timeline = [
         {
@@ -935,7 +935,7 @@ async def save_analyst_decision(
         decision_record = {
             "decision": decision,
             "analyst_note": analyst_note,
-            "decided_at": datetime.datetime.utcnow().isoformat(),
+            "decided_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "decided_by": "analyst"
         }
         result = await db.update_one(
