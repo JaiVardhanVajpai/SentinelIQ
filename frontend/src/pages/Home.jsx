@@ -49,9 +49,13 @@ function Home() {
       localStorage.setItem('sentineliq_result', JSON.stringify(res.data));
       navigate('/results');
     } catch (e) {
-      const detail =
-        e?.response?.data?.detail || e?.message || 'Investigation failed.';
-      setError(typeof detail === 'string' ? detail : JSON.stringify(detail));
+      if (e.code === 'ECONNABORTED' || e.message === 'Network Error') {
+        setError('Server is waking up from sleep mode - this can take up to 60 seconds on the free tier. Please try again now, it should be fast.');
+      } else {
+        const detail =
+          e?.response?.data?.detail || e?.message || 'Investigation failed.';
+        setError(typeof detail === 'string' ? detail : JSON.stringify(detail));
+      }
     } finally {
       setLoading(false);
     }

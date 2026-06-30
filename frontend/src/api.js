@@ -8,6 +8,7 @@ export const BASE_URL =
 
 const api = axios.create({
   baseURL: BASE_URL,
+  timeout: 45000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -19,5 +20,5 @@ export const keepAlive = () => {
   setInterval(() => {
     fetch(`${url}/`)
       .catch(() => {});
-  }, 10 * 60 * 1000);
+  }, 4 * 60 * 1000);
 };

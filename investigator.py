@@ -83,20 +83,30 @@ def investigate_url(url: str) -> dict:
         raise RuntimeError(f"VirusTotal error: {response.status_code}")
 
     analysis_id = response.json()["data"]["id"]
-
-    # Step 2: Wait for engines to complete
-    time.sleep(15)
-
-    # Step 3: Fetch results
-    result = requests.get(
-        f"https://www.virustotal.com/api/v3/analyses/{analysis_id}",
-        headers=headers,
-        timeout=10
+    analysis_url = (
+        f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
     )
-    if result.status_code != 200:
-        raise RuntimeError(f"VirusTotal error: {result.status_code}")
 
-    data = result.json()
+    # Step 2+3: Poll VirusTotal, exiting as soon as the scan is
+    # "completed" instead of always waiting a flat 15s. Polls every
+    # 5s up to 3 times (15s max), but usually returns much sooner.
+    max_retries = 3
+    wait_seconds = 5
+    data = None
+
+    for attempt in range(max_retries):
+        time.sleep(wait_seconds)
+        response = requests.get(
+            analysis_url, headers=headers, timeout=10
+        )
+        if response.status_code != 200:
+            raise RuntimeError(f"VirusTotal error: {response.status_code}")
+        data = response.json()
+        status = data.get("data", {}).get(
+            "attributes", {}
+        ).get("status", "")
+        if status == "completed":
+            break
 
     # Step 4: Extract stats (same fields/logic as /analyze-url)
     stats = data["data"]["attributes"]["stats"]
@@ -138,20 +148,37 @@ def investigate_url(url: str) -> dict:
         "primary_mitre": get_mitre_for_url(malicious),
     }
 
-    # MITRE retrieval (semantic) + AI explanation (RAG)
-    mitre_mapping = search_mitre(f"malicious url phishing {verdict}")
+    # MITRE retrieval (semantic) + AI explanation (RAG).
+    # Only map an attack technique when there is real threat signal —
+    # showing MITRE for a CLEAN/UNRATED or risk-0 URL is misleading.
+    if verdict == "UNRATED" or risk_score == 0:
+        mitre_mapping = []
+    else:
+        mitre_mapping = search_mitre(f"malicious url phishing {verdict}")
 
-    # Day 13: attach recommended mitigations to each technique
-    mitre_with_mitigations = []
-    for technique in (mitre_mapping or []):
-        technique_copy = dict(technique)
-        technique_copy["mitigations"] = get_mitigations(
-            technique.get("technique_id", "")
-        )
-        mitre_with_mitigations.append(technique_copy)
-    mitre_mapping = mitre_with_mitigations
+        # Day 13: attach recommended mitigations to each technique
+        mitre_with_mitigations = []
+        for technique in (mitre_mapping or []):
+            technique_copy = dict(technique)
+            technique_copy["mitigations"] = get_mitigations(
+                technique.get("technique_id", "")
+            )
+            mitre_with_mitigations.append(technique_copy)
+        mitre_mapping = mitre_with_mitigations
 
-    ai_explanation = explain_url_alert(threat_intel)
+    # Skip the Groq AI call for clean / unrated verdicts with no risk —
+    # there is no real threat to explain, and it saves ~0.6-0.8s. Keep
+    # the same response shape so the frontend renders consistently.
+    if verdict not in ("CLEAN", "UNRATED") or risk_score > 0:
+        ai_explanation = explain_url_alert(threat_intel)
+    else:
+        ai_explanation = {
+            "explanation": "No significant threat detected — AI analysis skipped for clean/unrated verdicts to optimize response time.",
+            "primary_mitre": "N/A",
+            "recommended_action": "No action required",
+            "ai_model": "skipped",
+            "grounded": False,
+        }
 
     # Confidence score
     confidence = min(
