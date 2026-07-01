@@ -30,6 +30,24 @@ from ai_explainer import (
 # Day 8: MongoDB persistence
 from database import get_db
 
+# Tunable detection thresholds (see config.py)
+from config import (
+    ABUSE_SCORE_MALICIOUS,
+    ABUSE_SCORE_SUSPICIOUS,
+    ABUSE_SCORE_PREVIOUSLY_MALICIOUS,
+    SANS_REPORTS_MALICIOUS,
+    SANS_REPORTS_SUSPICIOUS,
+    SANS_BONUS_DIVISOR,
+    SANS_BONUS_MAX,
+    SANS_CACHE_TTL_SECONDS,
+    PREVIOUSLY_MALICIOUS_RISK_FLOOR,
+    URL_MALICIOUS_ENGINE_COUNT,
+    URL_SUSPICIOUS_ENGINE_COUNT,
+    SEVERITY_CRITICAL_MIN,
+    SEVERITY_HIGH_MIN,
+    SEVERITY_MEDIUM_MIN,
+)
+
 load_dotenv()
 
 VT_KEY = os.getenv("VIRUSTOTAL_API_KEY")
@@ -55,11 +73,11 @@ def _new_investigation_id():
 
 def _severity_from_risk(risk_score: int) -> str:
     """Map a 0-100 risk score to a severity band."""
-    if risk_score >= 75:
+    if risk_score >= SEVERITY_CRITICAL_MIN:
         return "CRITICAL"
-    elif risk_score >= 50:
+    elif risk_score >= SEVERITY_HIGH_MIN:
         return "HIGH"
-    elif risk_score >= 25:
+    elif risk_score >= SEVERITY_MEDIUM_MIN:
         return "MEDIUM"
     return "LOW"
 
@@ -131,9 +149,9 @@ def investigate_url(url: str) -> dict:
     }
 
     # Same 3-tier verdict thresholds as /analyze-url
-    if malicious > 3:
+    if malicious > URL_MALICIOUS_ENGINE_COUNT:
         verdict = "MALICIOUS"
-    elif malicious >= 1:
+    elif malicious >= URL_SUSPICIOUS_ENGINE_COUNT:
         verdict = "SUSPICIOUS"
     else:
         verdict = "CLEAN"
@@ -333,7 +351,7 @@ def check_sans_isc(ip: str) -> dict:
         if _sans_cache["fetched_at"] else 999999
     )
 
-    if _sans_cache["data"] is None or cache_age > 600:
+    if _sans_cache["data"] is None or cache_age > SANS_CACHE_TTL_SECONDS:
         try:
             response = requests.get(
                 "https://isc.sans.edu/api/topips/records/100",
@@ -461,7 +479,7 @@ def investigate_ip(ip: str) -> dict:
     # when AbuseIPDB missed an active attacker.
     sans_bonus = 0
     if sans_result["found"]:
-        sans_bonus = min(40, sans_result["reports"] // 5000)
+        sans_bonus = min(SANS_BONUS_MAX, sans_result["reports"] // SANS_BONUS_DIVISOR)
         risk_score = min(100, risk_score + sans_bonus)
 
     # An IP that AbuseIPDB has NO usable record for (no country, isp,
@@ -490,11 +508,11 @@ def investigate_ip(ip: str) -> dict:
         # Real record, zero reports, zero abuse → genuinely clean
         verdict = "CLEAN"
         risk_score = 0
-    elif abuse_score >= 80 or (sans_result["found"] and sans_result["reports"] > 50000):
+    elif abuse_score >= ABUSE_SCORE_MALICIOUS or (sans_result["found"] and sans_result["reports"] > SANS_REPORTS_MALICIOUS):
         verdict = "MALICIOUS"
-    elif abuse_score >= 30 or (sans_result["found"] and sans_result["reports"] > 5000):
+    elif abuse_score >= ABUSE_SCORE_SUSPICIOUS or (sans_result["found"] and sans_result["reports"] > SANS_REPORTS_SUSPICIOUS):
         verdict = "SUSPICIOUS"
-    elif total_reports > 0 and abuse_score < 10:
+    elif total_reports > 0 and abuse_score < ABUSE_SCORE_PREVIOUSLY_MALICIOUS:
         # Has historical reports but currently low score
         # suggests it was bad before but cleaned up
         verdict = "PREVIOUSLY_MALICIOUS"
@@ -506,7 +524,7 @@ def investigate_ip(ip: str) -> dict:
         risk_score = 0
     elif verdict == "PREVIOUSLY_MALICIOUS":
         # Not fully trusted even though currently clean — moderate floor
-        risk_score = max(risk_score, 20)
+        risk_score = max(risk_score, PREVIOUSLY_MALICIOUS_RISK_FLOOR)
 
     threat_intel = {
         "type": "ip_analysis",

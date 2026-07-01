@@ -27,6 +27,15 @@ from investigator import (
 )
 from database import get_db
 from models import AnalystDecision
+from config import (
+    SOAR_TRIGGER_RISK,
+    SOAR_CRITICAL_RISK,
+    BULK_FLAGGED_RISK,
+    BULK_CLEAN_RISK,
+    RATE_LIMIT_INVESTIGATE,
+    RATE_LIMIT_BULK,
+    RATE_LIMIT_HUNT,
+)
 import asyncio
 import requests
 import os
@@ -537,7 +546,7 @@ def explain_alert(request: ExplainRequest):
 # UNIFIED INVESTIGATION — end-to-end report
 # ─────────────────────────────────────────
 @app.post("/investigate", dependencies=[Depends(verify_api_key)])
-@limiter.limit("10/minute")
+@limiter.limit(RATE_LIMIT_INVESTIGATE)
 async def investigate(request: Request, payload: InvestigateRequest, background_tasks: BackgroundTasks):
 
     valid_types = ["url", "ip", "login"]
@@ -620,7 +629,7 @@ async def get_all_investigations():
 # Day 15: Threat hunting — search past investigations
 # ─────────────────────────────────────────
 @app.get("/hunt", dependencies=[Depends(verify_api_key)])
-@limiter.limit("20/minute")
+@limiter.limit(RATE_LIMIT_HUNT)
 async def threat_hunt(
     request: Request,
     indicator: str,
@@ -792,10 +801,10 @@ async def soar_alert(investigation_id: str, db=Depends(get_db)):
                 detail="Investigation not found")
 
         risk = inv.get("risk_score", 0)
-        if risk < 75:
+        if risk < SOAR_TRIGGER_RISK:
             return {
                 "soar_triggered": False,
-                "reason": f"Risk score {risk} is below threshold (75)"
+                "reason": f"Risk score {risk} is below threshold ({SOAR_TRIGGER_RISK})"
             }
 
         mitre = []
@@ -820,7 +829,7 @@ async def soar_alert(investigation_id: str, db=Depends(get_db)):
         return {
             "soar_triggered": True,
             "alert_id": f"SOAR-{investigation_id}",
-            "severity": "CRITICAL" if risk >= 90 else "HIGH",
+            "severity": "CRITICAL" if risk >= SOAR_CRITICAL_RISK else "HIGH",
             "risk_score": risk,
             "indicator": inv.get("target") or inv.get("input_value"),
             "verdict": inv.get("verdict"),
@@ -852,7 +861,7 @@ async def soar_alert(investigation_id: str, db=Depends(get_db)):
 # Day 16: Bulk investigation — CSV indicator upload
 # ─────────────────────────────────────────
 @app.post("/bulk-investigate", dependencies=[Depends(verify_api_key)])
-@limiter.limit("3/minute")
+@limiter.limit(RATE_LIMIT_BULK)
 async def bulk_investigate(
     request: Request,
     file: UploadFile = File(...),
@@ -916,8 +925,8 @@ async def bulk_investigate(
                 })
 
         total = len(results)
-        flagged = [r for r in results if r.get("risk_score") and r["risk_score"] >= 70]
-        clean = [r for r in results if r.get("risk_score") is not None and r["risk_score"] < 30]
+        flagged = [r for r in results if r.get("risk_score") and r["risk_score"] >= BULK_FLAGGED_RISK]
+        clean = [r for r in results if r.get("risk_score") is not None and r["risk_score"] < BULK_CLEAN_RISK]
         no_data = [r for r in results if r["status"] == "not_found"]
 
         return {
