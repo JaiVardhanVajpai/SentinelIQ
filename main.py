@@ -25,6 +25,7 @@ from database import get_db
 from models import AnalystDecision
 import requests
 import os
+import re
 from dotenv import load_dotenv
 import csv
 import io
@@ -580,14 +581,17 @@ async def threat_hunt(
 ):
     try:
         indicator = indicator.strip().replace(" ", "")
+        # Escape regex metacharacters so user input can't inject a
+        # malicious/catastrophic pattern (NoSQL $regex injection / ReDoS).
+        indicator_safe = re.escape(indicator)
 
         # --- Date filter ---
         query_filter = {
             "$or": [
-                {"input_value":  {"$regex": indicator, "$options": "i"}},
-                {"target":       {"$regex": indicator, "$options": "i"}},
-                {"full_report.threat_intel.ip":  {"$regex": indicator, "$options": "i"}},
-                {"full_report.threat_intel.url": {"$regex": indicator, "$options": "i"}}
+                {"input_value":  {"$regex": indicator_safe, "$options": "i"}},
+                {"target":       {"$regex": indicator_safe, "$options": "i"}},
+                {"full_report.threat_intel.ip":  {"$regex": indicator_safe, "$options": "i"}},
+                {"full_report.threat_intel.url": {"$regex": indicator_safe, "$options": "i"}}
             ]
         }
         if days > 0:
@@ -694,7 +698,6 @@ async def threat_hunt(
         # --- Related IOCs ---
         related_iocs = []
         # CIDR /24 of the indicator if it's an IP
-        import re
         ip_match = re.match(r'^(\d+\.\d+\.\d+)\.\d+$', indicator)
         if ip_match:
             related_iocs.append({
@@ -820,10 +823,13 @@ async def bulk_investigate(
             if not indicator:
                 continue
 
+            # Escape regex metacharacters (NoSQL $regex injection / ReDoS).
+            indicator_safe = re.escape(indicator)
+
             existing = await db.find(
                 {"$or": [
-                    {"input_value": {"$regex": indicator, "$options": "i"}},
-                    {"target": {"$regex": indicator, "$options": "i"}}
+                    {"input_value": {"$regex": indicator_safe, "$options": "i"}},
+                    {"target": {"$regex": indicator_safe, "$options": "i"}}
                 ]},
                 {"_id": 0, "investigation_id": 1,
                  "risk_score": 1, "verdict": 1,
