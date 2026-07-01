@@ -27,6 +27,7 @@ from investigator import (
 )
 from database import get_db
 from models import AnalystDecision
+import asyncio
 import requests
 import os
 import re
@@ -562,12 +563,27 @@ async def investigate(request: Request, payload: InvestigateRequest, background_
             )
 
     try:
+        # investigate_* are synchronous and do blocking I/O
+        # (requests.get, time.sleep). Run them in a thread pool via
+        # run_in_executor so a slow scan can't block the event loop
+        # and serialize every other request.
+        loop = asyncio.get_event_loop()
+
         if payload.input_type == "url":
-            result = investigate_url(payload.input_value)
+            result = await loop.run_in_executor(
+                None,
+                lambda: investigate_url(payload.input_value)
+            )
         elif payload.input_type == "ip":
-            result = investigate_ip(payload.input_value)
+            result = await loop.run_in_executor(
+                None,
+                lambda: investigate_ip(payload.input_value)
+            )
         else:  # login
-            result = investigate_login(payload.events)
+            result = await loop.run_in_executor(
+                None,
+                lambda: investigate_login(payload.events)
+            )
 
         # Persist in the background so the response returns immediately.
         # save_investigation handles its own errors (logs, never raises).
