@@ -1,5 +1,9 @@
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, BackgroundTasks, Security, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 from typing import List, Optional
 from login_detector import analyze_login_events
@@ -36,6 +40,12 @@ load_dotenv()
 
 app = FastAPI()
 
+# Rate limiter — keyed by client IP. Protects the expensive,
+# external-API-calling endpoints from quota abuse.
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -63,6 +73,26 @@ GROQ_KEY = os.getenv("GROQ_API_KEY")
 
 if not GROQ_KEY or GROQ_KEY.strip() == "":
     raise RuntimeError("GROQ_API_KEY is missing from .env")
+
+# ─────────────────────────────────────────
+# API key authentication
+# Protects write / delete / expensive endpoints. If the key is
+# not configured (SENTINELIQ_API_KEY empty), auth is skipped so
+# local dev still works without a key.
+# ─────────────────────────────────────────
+SENTINELIQ_API_KEY = os.getenv("SENTINELIQ_API_KEY", "")
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def verify_api_key(api_key: str = Security(api_key_header)):
+    if not SENTINELIQ_API_KEY:
+        return  # not configured — skip auth (dev mode)
+    if api_key != SENTINELIQ_API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing API key. Include X-API-Key header."
+        )
 
 
 @app.on_event("startup")
@@ -505,38 +535,39 @@ def explain_alert(request: ExplainRequest):
 # ─────────────────────────────────────────
 # UNIFIED INVESTIGATION — end-to-end report
 # ─────────────────────────────────────────
-@app.post("/investigate")
-async def investigate(request: InvestigateRequest, background_tasks: BackgroundTasks):
+@app.post("/investigate", dependencies=[Depends(verify_api_key)])
+@limiter.limit("10/minute")
+async def investigate(request: Request, payload: InvestigateRequest, background_tasks: BackgroundTasks):
 
     valid_types = ["url", "ip", "login"]
 
     # Input validation
-    if request.input_type not in valid_types:
+    if payload.input_type not in valid_types:
         raise HTTPException(
             status_code=400,
             detail="Invalid input_type. Must be 'url', 'ip', or 'login'"
         )
 
-    if request.input_type in ["url", "ip"]:
-        if not request.input_value or request.input_value.strip() == "":
+    if payload.input_type in ["url", "ip"]:
+        if not payload.input_value or payload.input_value.strip() == "":
             raise HTTPException(
                 status_code=400,
                 detail="input_value is required for url/ip investigations"
             )
     else:  # login
-        if not request.events:
+        if not payload.events:
             raise HTTPException(
                 status_code=400,
                 detail="events are required for login investigations"
             )
 
     try:
-        if request.input_type == "url":
-            result = investigate_url(request.input_value)
-        elif request.input_type == "ip":
-            result = investigate_ip(request.input_value)
+        if payload.input_type == "url":
+            result = investigate_url(payload.input_value)
+        elif payload.input_type == "ip":
+            result = investigate_ip(payload.input_value)
         else:  # login
-            result = investigate_login(request.events)
+            result = investigate_login(payload.events)
 
         # Persist in the background so the response returns immediately.
         # save_investigation handles its own errors (logs, never raises).
@@ -572,8 +603,10 @@ async def get_all_investigations():
 # ─────────────────────────────────────────
 # Day 15: Threat hunting — search past investigations
 # ─────────────────────────────────────────
-@app.get("/hunt")
+@app.get("/hunt", dependencies=[Depends(verify_api_key)])
+@limiter.limit("20/minute")
 async def threat_hunt(
+    request: Request,
     indicator: str,
     type: str = "all",           # "ip", "url", "domain", "hash", "all"
     days: int = 0,               # 0 = all time, 7 = last 7 days, etc.
@@ -731,7 +764,7 @@ async def threat_hunt(
 # ─────────────────────────────────────────
 # Day 17: SOAR alert — auto-trigger playbooks for high-risk cases
 # ─────────────────────────────────────────
-@app.get("/soar-alert/{investigation_id}")
+@app.get("/soar-alert/{investigation_id}", dependencies=[Depends(verify_api_key)])
 async def soar_alert(investigation_id: str, db=Depends(get_db)):
     try:
         inv = await db.find_one(
@@ -802,8 +835,10 @@ async def soar_alert(investigation_id: str, db=Depends(get_db)):
 # ─────────────────────────────────────────
 # Day 16: Bulk investigation — CSV indicator upload
 # ─────────────────────────────────────────
-@app.post("/bulk-investigate")
+@app.post("/bulk-investigate", dependencies=[Depends(verify_api_key)])
+@limiter.limit("3/minute")
 async def bulk_investigate(
+    request: Request,
     file: UploadFile = File(...),
     db=Depends(get_db)
 ):
@@ -900,7 +935,7 @@ async def get_one_investigation(investigation_id: str):
         return {"error": str(e)}
 
 
-@app.delete("/investigations/{investigation_id}")
+@app.delete("/investigations/{investigation_id}", dependencies=[Depends(verify_api_key)])
 async def delete_investigation(investigation_id: str):
     try:
         db = get_db()
@@ -943,7 +978,7 @@ async def download_report(investigation_id: str):
 # ─────────────────────────────────────────
 # Day 11: Human-in-the-loop analyst decision
 # ─────────────────────────────────────────
-@app.post("/investigations/{investigation_id}/decision")
+@app.post("/investigations/{investigation_id}/decision", dependencies=[Depends(verify_api_key)])
 async def submit_decision(
     investigation_id: str,
     decision_data: AnalystDecision
