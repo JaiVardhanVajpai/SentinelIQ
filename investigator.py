@@ -85,53 +85,91 @@ def _severity_from_risk(risk_score: int) -> str:
 # ─────────────────────────────────────────
 # URL INVESTIGATION
 # ─────────────────────────────────────────
+def _vt_existing_url_report(url: str, headers: dict):
+    """
+    Fast path: fetch VirusTotal's EXISTING report for a URL without
+    submitting a new scan. Returns the last_analysis_stats dict in
+    ~0.5s for any URL VirusTotal has seen before, or None if there
+    is no usable prior report (unknown URL) — caller then falls back
+    to the slow submit-and-poll path.
+    """
+    import base64
+
+    url_id = base64.urlsafe_b64encode(url.encode()).decode().rstrip("=")
+    try:
+        response = requests.get(
+            f"https://www.virustotal.com/api/v3/urls/{url_id}",
+            headers=headers,
+            timeout=10
+        )
+        if response.status_code != 200:
+            return None
+        stats = response.json()["data"]["attributes"].get(
+            "last_analysis_stats", {}
+        )
+        total = sum(stats.get(k, 0) for k in
+                    ("malicious", "harmless", "suspicious", "undetected"))
+        # A report with zero engine results is useless — treat as missing
+        return stats if total > 0 else None
+    except Exception:
+        return None
+
+
 def investigate_url(url: str) -> dict:
     """Full investigation for a URL (VirusTotal + MITRE + AI)."""
     inv_id, timestamp = _new_investigation_id()
     headers = {"x-apikey": VT_KEY.strip()}
 
-    # Step 1: Submit URL for analysis
-    response = requests.post(
-        "https://www.virustotal.com/api/v3/urls",
-        headers=headers,
-        data={"url": url},
-        timeout=10
-    )
-    if response.status_code != 200:
-        raise RuntimeError(f"VirusTotal error: {response.status_code}")
+    # FAST PATH: most URLs are already known to VirusTotal — fetch
+    # the existing report instantly instead of submitting a fresh
+    # scan and sleeping through a 5-15s polling loop.
+    stats = _vt_existing_url_report(url, headers)
 
-    analysis_id = response.json()["data"]["id"]
-    analysis_url = (
-        f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
-    )
-
-    # Step 2+3: Poll VirusTotal, exiting as soon as the scan is
-    # "completed" instead of always waiting a flat 15s. Polls every
-    # 5s up to 3 times (15s max), but usually returns much sooner.
-    max_retries = 3
-    wait_seconds = 5
-    data = None
-
-    for attempt in range(max_retries):
-        time.sleep(wait_seconds)
-        response = requests.get(
-            analysis_url, headers=headers, timeout=10
+    if stats is None:
+        # SLOW PATH (URL never seen by VirusTotal before):
+        # Step 1: Submit URL for analysis
+        response = requests.post(
+            "https://www.virustotal.com/api/v3/urls",
+            headers=headers,
+            data={"url": url},
+            timeout=10
         )
         if response.status_code != 200:
             raise RuntimeError(f"VirusTotal error: {response.status_code}")
-        data = response.json()
-        status = data.get("data", {}).get(
-            "attributes", {}
-        ).get("status", "")
-        if status == "completed":
-            break
 
-    # Step 4: Extract stats (same fields/logic as /analyze-url)
-    stats = data["data"]["attributes"]["stats"]
-    malicious = stats["malicious"]
-    harmless = stats["harmless"]
-    suspicious = stats["suspicious"]
-    undetected = stats["undetected"]
+        analysis_id = response.json()["data"]["id"]
+        analysis_url = (
+            f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
+        )
+
+        # Step 2+3: Poll VirusTotal, exiting as soon as the scan is
+        # "completed" instead of always waiting a flat 15s. Polls every
+        # 5s up to 3 times (15s max), but usually returns much sooner.
+        max_retries = 3
+        wait_seconds = 5
+        data = None
+
+        for attempt in range(max_retries):
+            time.sleep(wait_seconds)
+            response = requests.get(
+                analysis_url, headers=headers, timeout=10
+            )
+            if response.status_code != 200:
+                raise RuntimeError(f"VirusTotal error: {response.status_code}")
+            data = response.json()
+            status = data.get("data", {}).get(
+                "attributes", {}
+            ).get("status", "")
+            if status == "completed":
+                break
+
+        # Step 4: Extract stats (same fields/logic as /analyze-url)
+        stats = data["data"]["attributes"]["stats"]
+
+    malicious = stats.get("malicious", 0)
+    harmless = stats.get("harmless", 0)
+    suspicious = stats.get("suspicious", 0)
+    undetected = stats.get("undetected", 0)
 
     total_engines = malicious + harmless + suspicious + undetected
     risk_score = (

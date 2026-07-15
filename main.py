@@ -193,58 +193,67 @@ def analyze_url(url: str):
     headers = {"x-apikey": VT_KEY.strip()}
 
     try:
-        # Step 1: Submit URL for analysis
-        response = requests.post(
-            "https://www.virustotal.com/api/v3/urls",
-            headers=headers,
-            data={"url": url},
-            timeout=10
-        )
+        # FAST PATH: fetch VirusTotal's existing report for the URL
+        # (~0.5s) instead of always submitting a fresh scan and
+        # sleeping through the 15-60s polling loop below.
+        from investigator import _vt_existing_url_report
+        stats = _vt_existing_url_report(url, headers)
 
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=502,
-                detail=f"VirusTotal error: {response.status_code}"
+        if stats is None:
+            # SLOW PATH — URL never seen by VirusTotal before.
+            # Step 1: Submit URL for analysis
+            response = requests.post(
+                "https://www.virustotal.com/api/v3/urls",
+                headers=headers,
+                data={"url": url},
+                timeout=10
             )
 
-        analysis_id = response.json()["data"]["id"]
-        analysis_url = (
-            f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
-        )
-
-        # Step 2+3: Poll until the scan is actually complete.
-        # VirusTotal often still reports "queued" after a single
-        # 15s wait, which previously made fresh URLs look CLEAN.
-        # Retry up to 4 times (15s apart) until status == "completed".
-        import time as time_module
-
-        max_retries = 4
-        wait_seconds = 15
-        data = None
-
-        for attempt in range(max_retries):
-            time_module.sleep(wait_seconds)
-            response = requests.get(
-                analysis_url, headers=headers
-            )
             if response.status_code != 200:
                 raise HTTPException(
                     status_code=502,
                     detail=f"VirusTotal error: {response.status_code}"
                 )
-            data = response.json()
-            status = data.get("data", {}).get(
-                "attributes", {}
-            ).get("status", "")
-            if status == "completed":
-                break
 
-        # Step 4: Extract stats
-        stats = data["data"]["attributes"]["stats"]
-        malicious = stats["malicious"]
-        harmless = stats["harmless"]
-        suspicious = stats["suspicious"]
-        undetected = stats["undetected"]
+            analysis_id = response.json()["data"]["id"]
+            analysis_url = (
+                f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
+            )
+
+            # Step 2+3: Poll until the scan is actually complete.
+            # VirusTotal often still reports "queued" after a single
+            # 15s wait, which previously made fresh URLs look CLEAN.
+            # Retry up to 4 times (15s apart) until status == "completed".
+            import time as time_module
+
+            max_retries = 4
+            wait_seconds = 15
+            data = None
+
+            for attempt in range(max_retries):
+                time_module.sleep(wait_seconds)
+                response = requests.get(
+                    analysis_url, headers=headers
+                )
+                if response.status_code != 200:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"VirusTotal error: {response.status_code}"
+                    )
+                data = response.json()
+                status = data.get("data", {}).get(
+                    "attributes", {}
+                ).get("status", "")
+                if status == "completed":
+                    break
+
+            # Step 4: Extract stats
+            stats = data["data"]["attributes"]["stats"]
+
+        malicious = stats.get("malicious", 0)
+        harmless = stats.get("harmless", 0)
+        suspicious = stats.get("suspicious", 0)
+        undetected = stats.get("undetected", 0)
 
         # Step 5: Calculate risk score
         total_engines = (
